@@ -27,37 +27,37 @@ namespace Bikya.Services.Interfaces
         /// <summary>
         /// Gets all approved products with images.
         /// </summary>
-        Task<IEnumerable<Product>> GetApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all not approved products with images.
         /// </summary>
-        Task<IEnumerable<Product>> GetNotApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetNotApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all products with images.
         /// </summary>
-        Task<IEnumerable<Product>> GetAllProductsWithImagesAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetAllProductsWithImagesAsync(CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a product by ID with images.
         /// </summary>
-        Task<Product> GetProductWithImagesByIdAsync(int productId, CancellationToken cancellationToken = default);
+        Task<GetProductDTO> GetProductWithImagesByIdAsync(int productId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all products for a specific user.
         /// </summary>
-        Task<IEnumerable<Product>> GetProductsByUserAsync(int userId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetProductsByUserAsync(int userId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all not approved products for a specific user.
         /// </summary>
-        Task<IEnumerable<Product>> GetNotApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all products for a specific category.
         /// </summary>
-        Task<IEnumerable<Product>> GetProductsByCategoryAsync(int categoryId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetProductsByCategoryAsync(int categoryId, CancellationToken cancellationToken = default);
 
         #endregion
 

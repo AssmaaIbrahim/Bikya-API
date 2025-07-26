@@ -24,7 +24,7 @@ namespace Bikya.Data.Repositories
         public async Task<IEnumerable<Product>> GetApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default)
         {
             return await GetProductsWithImagesQuery()
-                .Where(p => p.IsApproved)
+                .Where(p => p.IsApproved).Where(p => p.Status == Enums.ProductStatus.Available)
                 .ToListAsync(cancellationToken);
         }
 
@@ -54,10 +54,10 @@ namespace Bikya.Data.Repositories
                 .ToListAsync(cancellationToken);
         }
 
-        public async Task<IEnumerable<Product>> GetNotApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<Product>> GetApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default)
         {
             return await GetProductsWithImagesQuery()
-                .Where(p => p.UserId == userId && !p.IsApproved)
+                .Where(p => p.UserId == userId && p.IsApproved)
                 .ToListAsync(cancellationToken);
         }
 
@@ -95,7 +95,10 @@ namespace Bikya.Data.Repositories
 
         public async Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
         {
+            product.User = null;
+            //product.Category= null;
             Remove(product);
+
             await SaveChangesAsync(cancellationToken);
         }
 
@@ -137,6 +140,7 @@ namespace Bikya.Data.Repositories
                 .AsNoTracking()
                 .Include(p => p.Images)
                 .Include(p => p.Category)
+                .Include(p => p.User)
                 .OrderByDescending(p => p.CreatedAt);
         }
 

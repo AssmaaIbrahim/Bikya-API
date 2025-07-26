@@ -39,7 +39,7 @@ namespace Bikya.Data.Repositories.Interfaces
         /// <summary>
         /// Gets all not approved products for a specific user with their images and category information.
         /// </summary>
-        Task<IEnumerable<Product>> GetNotApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Product>> GetApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all approved products for a specific category with their images and category information.

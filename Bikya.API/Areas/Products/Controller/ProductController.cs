@@ -45,25 +45,27 @@ namespace Bikya.API.Areas.Products.Controller
         /// Gets all products with images (Admin only).
         /// </summary>
         /// <returns>List of all products</returns>
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         [HttpGet("all")]
         public async Task<IActionResult> GetAllProductsWithImages()
         {
             var products = await _productService.GetAllProductsWithImagesAsync();
-            return Ok(ApiResponse<IEnumerable<Product>>.SuccessResponse(products));
+
+
+            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
         }
 
         /// <summary>
         /// Gets all not approved products with images (Admin only).
         /// </summary>
         /// <returns>List of not approved products</returns>
-        [Authorize(Roles = "Admin")]
-        [HttpGet("not-approved")]
-        public async Task<IActionResult> GetNotApprovedProductsWithImages()
-        {
-            var products = await _productService.GetNotApprovedProductsWithImagesAsync();
-            return Ok(ApiResponse<IEnumerable<Product>>.SuccessResponse(products));
-        }
+        //[Authorize(Roles = "Admin")]
+        //[HttpGet("not-approved")]
+        //public async Task<IActionResult> GetNotApprovedProductsWithImages()
+        //{
+        //    var products = await _productService.GetNotApprovedProductsWithImagesAsync();
+        //    return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+        //}
 
         /// <summary>
         /// Approves a product (Admin only).
@@ -103,7 +105,7 @@ namespace Bikya.API.Areas.Products.Controller
         public async Task<IActionResult> GetApprovedProductsWithImages()
         {
             var products = await _productService.GetApprovedProductsWithImagesAsync();
-            return Ok(ApiResponse<IEnumerable<Product>>.SuccessResponse(products));
+            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
         }
 
         /// <summary>
@@ -111,11 +113,11 @@ namespace Bikya.API.Areas.Products.Controller
         /// </summary>
         /// <param name="id">Product ID</param>
         /// <returns>Product details</returns>
-        [HttpGet("approved/{id}")]
+        [HttpGet("Product/{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {
             var product = await _productService.GetProductWithImagesByIdAsync(id);
-            return Ok(ApiResponse<Product>.SuccessResponse(product));
+            return Ok(ApiResponse<GetProductDTO>.SuccessResponse(product));
         }
 
         /// <summary>
@@ -127,19 +129,21 @@ namespace Bikya.API.Areas.Products.Controller
         public async Task<IActionResult> GetProductsByUser(int userId)
         {
             var products = await _productService.GetProductsByUserAsync(userId);
-            return Ok(ApiResponse<IEnumerable<Product>>.SuccessResponse(products));
+            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
         }
 
         /// <summary>
-        /// Gets not approved products by user ID.
+        /// Gets  approved products by user ID.
         /// </summary>
         /// <param name="userId">User ID</param>
         /// <returns>List of user's not approved products</returns>
-        [HttpGet("user/{userId}/not-approved")]
-        public async Task<IActionResult> GetNotApprovedProductsByUser(int userId)
+        /// 
+
+        [HttpGet("user/{userId}/approved")]
+        public async Task<IActionResult> GetApprovedProductsByUser(int userId)
         {
-            var products = await _productService.GetNotApprovedProductsByUserAsync(userId);
-            return Ok(ApiResponse<IEnumerable<Product>>.SuccessResponse(products));
+            var products = await _productService.GetApprovedProductsByUserAsync(userId);
+            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
         }
 
         /// <summary>
@@ -151,7 +155,7 @@ namespace Bikya.API.Areas.Products.Controller
         public async Task<IActionResult> GetProductsByCategory(int id)
         {
             var products = await _productService.GetProductsByCategoryAsync(id);
-            return Ok(ApiResponse<IEnumerable<Product>>.SuccessResponse(products));
+            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
         }
 
         #endregion
@@ -163,19 +167,21 @@ namespace Bikya.API.Areas.Products.Controller
         /// </summary>
         /// <param name="product">Product data</param>
         /// <returns>Creation result</returns>
-        [Authorize]
-        [HttpPost]
-        public async Task<IActionResult> CreateProduct([FromBody] ProductDTO product)
-        {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+        /// 
 
-            if (!TryGetUserId(out int userId))
-                return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
+        //[Authorize]
+        //[HttpPost]
+        //public async Task<IActionResult> CreateProduct([FromBody] ProductDTO product)
+        //{
+        //    if (!ModelState.IsValid)
+        //        return BadRequest(ModelState);
 
-            await _productService.CreateProductAsync(product, userId);
-            return Ok(ApiResponse<bool>.SuccessResponse(true));
-        }
+        //    if (!TryGetUserId(out int userId))
+        //        return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
+
+        //    await _productService.CreateProductAsync(product, userId);
+        //    return Ok(ApiResponse<bool>.SuccessResponse(true));
+        //}
 
         /// <summary>
         /// Creates a new product with images.

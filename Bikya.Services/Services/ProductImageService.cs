@@ -86,8 +86,16 @@ namespace Bikya.Services.Services
             if (product.Status != Data.Enums.ProductStatus.Available)
                 throw new InvalidOperationException("You cannot modify images for a product that is in Process");
 
+                var safeFileName = productImageDTO.Image.FileName
+               .Replace(" ", "-")
+               .Replace("(", "")
+               .Replace(")", "")
+               .Replace("&", "")
+               .Replace("#", "")
+               .Replace("%", "");
+
             // Generate unique filename
-            var fileName = $"{Guid.NewGuid()}_{productImageDTO.Image.FileName}";
+            var fileName = $"{Guid.NewGuid()}_{safeFileName}";
             var folderPath = Path.Combine(rootPath, "Images", "Products");
             var filePath = Path.Combine(folderPath, fileName);
 
