@@ -64,7 +64,7 @@ namespace Bikya
             builder.Services.AddScoped<IShippingService, ShippingService>();
             builder.Services.AddScoped<Bikya.Services.Services.ProductService, Bikya.Services.Services.ProductService>();
             builder.Services.AddScoped<ProductImageService, ProductImageService>();
-            
+
             builder.Services.AddHttpContextAccessor();
 
             // Configure Identity
@@ -129,10 +129,10 @@ namespace Bikya
             {
                 options.AddPolicy("RequireAdminRole", policy =>
                     policy.RequireRole("Admin"));
-                
+
                 options.AddPolicy("RequireUserRole", policy =>
                     policy.RequireRole("User", "Admin"));
-                
+
                 options.AddPolicy("RequireVerifiedUser", policy =>
                     policy.RequireAssertion(context =>
                         context.User.HasClaim(c => c.Type == "IsVerified" && c.Value == "true") ||
@@ -144,7 +144,15 @@ namespace Bikya
             {
                 options.AddPolicy("AllowSpecificOrigin", policy =>
                 {
-                    policy.WithOrigins("http://localhost:4200")
+                    policy.WithOrigins(
+                            "http://localhost:4200",
+                            "http://localhost:50394",
+                            "http://localhost:4201",
+                            "http://localhost:4202",
+                            "http://localhost:4203",
+                            "http://localhost:4204",
+                            "http://localhost:4205"
+                          )
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
@@ -198,10 +206,10 @@ namespace Bikya
             app.UseMiddleware<GlobalExceptionHandler>();
 
             // Seed roles
-            using (var scope = app.Services.CreateScope())
-            {
-                SeedRoles(scope.ServiceProvider).Wait();
-            }
+            //using (var scope = app.Services.CreateScope())
+            //{
+            //    SeedRoles(scope.ServiceProvider).Wait();
+            //}
 
             if (app.Environment.IsDevelopment())
             {
@@ -212,7 +220,6 @@ namespace Bikya
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseCors("AllowSpecificOrigin");
-            app.UseStaticFiles();
 
             // Map controllers with areas support
             app.MapControllers();

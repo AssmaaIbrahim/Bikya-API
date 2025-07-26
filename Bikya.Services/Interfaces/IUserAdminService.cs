@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Bikya.Services.Interfaces
 {
-    public  interface IUserAdminService 
+    public interface IUserAdminService
     {
         Task<ApiResponse<List<UserProfileDto>>> GetAllUsersAsync(string? search, string? status);
         Task<ApiResponse<List<UserProfileDto>>> GetActiveUsersAsync();

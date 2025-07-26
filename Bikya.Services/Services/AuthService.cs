@@ -10,6 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using System.Web;
 
 namespace Bikya.Services.Services
 {
@@ -94,7 +95,7 @@ namespace Bikya.Services.Services
                 {
                     await _roleManager.CreateAsync(new ApplicationRole { Name = roleToAssign });
                 }
-                
+
                 var roleResult = await _userManager.AddToRoleAsync(user, roleToAssign);
                 if (!roleResult.Succeeded)
                 {
@@ -122,7 +123,7 @@ namespace Bikya.Services.Services
                             <p>Best regards,<br>The Bikya Team</p>
                         </body>
                         </html>";
-                    
+
                     await _emailSender.SendEmailAsync(user.Email, subject, body);
                     _logger.LogInformation("Verification email sent to {Email} during registration", user.Email);
                 }
@@ -137,7 +138,7 @@ namespace Bikya.Services.Services
                 // Return success without token - user must verify email first
                 var successMessage = roleToAssign == "Admin" ? "Admin registration initiated. Please check your email and verify your account before logging in." : "Registration initiated. Please check your email and verify your account before logging in.";
                 _logger.LogInformation("User {Email} registration initiated as {Role} - awaiting email verification", dto.Email, roleToAssign);
-                
+
                 return ApiResponse<AuthResponseDto>.SuccessResponse(null, successMessage);
             }
             catch (Exception ex)
@@ -316,6 +317,38 @@ namespace Bikya.Services.Services
         /// <summary>
         /// Initiates the forgot password process for a user.
         /// </summary>
+        //public async Task<ApiResponse<string>> ForgotPasswordAsync(ForgotPasswordDto dto)
+        //{
+        //    try
+        //    {
+        //        if (string.IsNullOrWhiteSpace(dto.Email))
+        //            return ApiResponse<string>.ErrorResponse("Email is required.", 400);
+
+        //        if (!IsValidEmail(dto.Email))
+        //            return ApiResponse<string>.ErrorResponse("Invalid email format.", 400);
+
+        //        var user = await _userManager.FindByEmailAsync(dto.Email);
+        //        if (user == null)
+        //        {
+        //            // Don't reveal if email exists or not for security
+        //            _logger.LogInformation("Password reset requested for non-existent email: {Email}", dto.Email);
+        //            return ApiResponse<string>.SuccessResponse("If the email exists, a password reset link will be sent.");
+        //        }
+
+        //        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+        //        var resetUrl = $"http://localhost:4200/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(dto.Email)}";
+
+        //        // In a real implementation, you would send this via email
+        //        _logger.LogInformation("Password reset link generated for {Email}: {ResetUrl}", dto.Email, resetUrl);
+
+        //        return ApiResponse<string>.SuccessResponse("Password reset link sent.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error in forgot password for {Email}", dto.Email);
+        //        return ApiResponse<string>.ErrorResponse("An unexpected error occurred.", 500);
+        //    }
+        //}
         public async Task<ApiResponse<string>> ForgotPasswordAsync(ForgotPasswordDto dto)
         {
             try
@@ -329,7 +362,6 @@ namespace Bikya.Services.Services
                 var user = await _userManager.FindByEmailAsync(dto.Email);
                 if (user == null)
                 {
-                    // Don't reveal if email exists or not for security
                     _logger.LogInformation("Password reset requested for non-existent email: {Email}", dto.Email);
                     return ApiResponse<string>.SuccessResponse("If the email exists, a password reset link will be sent.");
                 }
@@ -337,8 +369,13 @@ namespace Bikya.Services.Services
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
                 var resetUrl = $"http://localhost:4200/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(dto.Email)}";
 
-                // In a real implementation, you would send this via email
-                _logger.LogInformation("Password reset link generated for {Email}: {ResetUrl}", dto.Email, resetUrl);
+                // أرسل الإيميل فعليًا هنا
+                await _emailSender.SendEmailAsync(
+                    user.Email,
+                    "Reset your password",
+                    $"Click here to reset: <a href='{resetUrl}'>Reset Password</a>"
+                );
+                _logger.LogInformation("Password reset link generated and sent for {Email}: {ResetUrl}", dto.Email, resetUrl);
 
                 return ApiResponse<string>.SuccessResponse("Password reset link sent.");
             }
@@ -389,19 +426,31 @@ namespace Bikya.Services.Services
         /// </summary>
         public async Task<ApiResponse<string>> SendVerificationEmailAsync(string email)
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
-                return ApiResponse<string>.ErrorResponse("User not found.", 404);
-            if (user.EmailConfirmed)
-                return ApiResponse<string>.SuccessResponse("Email is already verified.");
+            try
+            {
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                    return ApiResponse<string>.ErrorResponse("User not found.", 404);
 
-            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var verificationUrl = $"http://localhost:4200/verify-email?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(email)}";
-            var subject = "Verify your email address";
-            var body = $"Please verify your email by clicking the following link: {verificationUrl}";
-            await _emailSender.SendEmailAsync(email, subject, body);
-            _logger.LogInformation("Verification email sent to {Email}: {Url}", email, verificationUrl);
-            return ApiResponse<string>.SuccessResponse("Verification email sent.");
+                var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+                var encodedToken = HttpUtility.UrlEncode(token);
+
+                var verificationLink = $"https://localhost:65162/api/Identity/Auth/verify-email?token={encodedToken}&email={email}";
+
+                var body = $@"
+            <h1>Hi {user.FullName},</h1>
+            <p>Please click the link below to verify your email:</p>
+            <a href='{verificationLink}'>Verify Email</a>";
+
+                await _emailSender.SendEmailAsync(email, "Bikya Email Verification", body);
+
+                return ApiResponse<string>.SuccessResponse("Verification email sent.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error sending verification email to {Email}", email);
+                return ApiResponse<string>.ErrorResponse("Failed to send verification email. Please try again.", 500, new List<string> { ex.Message, ex.InnerException?.Message ?? "" });
+            }
         }
 
         /// <summary>
@@ -413,11 +462,11 @@ namespace Bikya.Services.Services
             {
                 if (string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(email))
                     return ApiResponse<AuthResponseDto>.ErrorResponse("Token and email are required for verification.", 400);
-                
+
                 var user = await _userManager.FindByEmailAsync(email);
                 if (user == null)
                     return ApiResponse<AuthResponseDto>.ErrorResponse("User not found.", 404);
-                
+
                 if (user.EmailConfirmed)
                 {
                     // If already verified, generate token and return
@@ -435,7 +484,7 @@ namespace Bikya.Services.Services
                     };
                     return ApiResponse<AuthResponseDto>.SuccessResponse(response, "Email is already verified. Welcome back!");
                 }
-                
+
                 var result = await _userManager.ConfirmEmailAsync(user, token);
                 if (result.Succeeded)
                 {
@@ -452,11 +501,11 @@ namespace Bikya.Services.Services
                         Roles = roles.ToList(),
                         Expiration = DateTime.UtcNow.AddMinutes(60)
                     };
-                    
+
                     _logger.LogInformation("Email verified successfully for {Email}", email);
                     return ApiResponse<AuthResponseDto>.SuccessResponse(response, "Email verified successfully. Welcome to Bikya!");
                 }
-                
+
                 var errors = result.Errors.Select(e => e.Description).ToList();
                 _logger.LogError("Email verification failed for {Email}: {Errors}", email, string.Join(", ", errors));
                 return ApiResponse<AuthResponseDto>.ErrorResponse("Email verification failed.", 400, errors);

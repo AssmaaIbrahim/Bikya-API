@@ -1,12 +1,13 @@
-﻿using Bikya.DTOs.AuthDTOs;
+﻿using Bikya.Data.Models;
+using Bikya.Data.Response;
+using Bikya.DTOs.AuthDTOs;
 using Bikya.DTOs.UserDTOs;
 using Bikya.Services.Interfaces;
+using Bikya.Services.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
-using Bikya.Data.Response;
-using Microsoft.AspNetCore.Identity;
-using Bikya.Data.Models;
 
 namespace Bikya.API.Areas.Identity.Controllers
 {
@@ -20,11 +21,15 @@ namespace Bikya.API.Areas.Identity.Controllers
     {
         private readonly IAuthService _authService;
         private readonly IConfiguration _configuration;
+        private readonly IEmailSender _emailSender; // أضف ده
 
-        public AuthController(IAuthService authService, IConfiguration configuration)
+
+        public AuthController(IAuthService authService, IConfiguration configuration, IEmailSender emailSender)
         {
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _emailSender = emailSender; // خزنها
+
         }
 
         // Helper: Get UserId from Claims
@@ -117,6 +122,19 @@ namespace Bikya.API.Areas.Identity.Controllers
             }
             return StatusCode(result.StatusCode, result);
         }
+        [HttpGet("send-test-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SendTestEmail()
+        {
+            await _emailSender.SendEmailAsync(
+                "testuser@gmail.com",
+                "Hello from Bikya!",
+                "<h1>Welcome!</h1><p>This is a test email using Gmail API.</p>"
+            );
+
+            return Ok("Email sent successfully.");
+        }
+
 
         /// <summary>
         /// Authenticates a user and returns a JWT token.
@@ -224,7 +242,7 @@ namespace Bikya.API.Areas.Identity.Controllers
             var email = User.FindFirstValue(ClaimTypes.Email);
             var role = User.FindFirstValue(ClaimTypes.Role);
             return Ok(ApiResponse<object>.SuccessResponse(new
-            { 
+            {
                 message = "الرمز صحيح",
                 userId,
                 email,
@@ -293,7 +311,7 @@ namespace Bikya.API.Areas.Identity.Controllers
         {
             if (!ModelState.IsValid)
                 return ValidationErrorResponse();
-            
+
             try
             {
                 // Create user with EmailConfirmed = true for testing
@@ -324,7 +342,7 @@ namespace Bikya.API.Areas.Identity.Controllers
                 {
                     await roleManager.CreateAsync(new ApplicationRole { Name = roleToAssign });
                 }
-                
+
                 var roleResult = await userManager.AddToRoleAsync(user, roleToAssign);
                 if (!roleResult.Succeeded)
                 {

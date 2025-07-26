@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace Bikya.Services.Interfaces
 {
-   
-        public interface IAuthService
-        {
+
+    public interface IAuthService
+    {
         Task<ApiResponse<AuthResponseDto>> RegisterAsync(RegisterDto dto);
         Task<ApiResponse<AuthResponseDto>> LoginAsync(LoginDto dto);
-            
-         Task<ApiResponse<UserProfileDto>> GetProfileAsync(int userId);
+
+        Task<ApiResponse<UserProfileDto>> GetProfileAsync(int userId);
         Task<ApiResponse<AuthResponseDto>> RefreshTokenAsync(RefreshTokenDto dto);
         Task<ApiResponse<string>> ForgotPasswordAsync(ForgotPasswordDto dto);
         Task<ApiResponse<string>> ResetPasswordAsync(ResetPasswordDto dto);

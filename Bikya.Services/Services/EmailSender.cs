@@ -1,8 +1,8 @@
 using Bikya.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
-using System.Net;
-using System.Net.Mail;
+//using System.Net;
+//using System.Net.Mail;
 using System.Threading.Tasks;
 using System;
 
@@ -22,6 +22,21 @@ namespace Bikya.Services.Services
         {
             try
             {
+                await GmailServiceHelper.SendEmailAsync(toEmail, subject, body);
+                _logger.LogInformation("Email sent to {ToEmail} via Gmail API.", toEmail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send email to {ToEmail}: {Message}", toEmail, ex.Message);
+                throw;
+            }
+        }
+
+        /*
+        public async Task SendEmailAsync(string toEmail, string subject, string body)
+        {
+            try
+            {
                 // Try primary SMTP configuration first
                 var smtpSection = _configuration.GetSection("Smtp");
                 var host = smtpSection["Host"];
@@ -29,6 +44,9 @@ namespace Bikya.Services.Services
                 var enableSsl = bool.Parse(smtpSection["EnableSsl"] ?? "true");
                 var username = smtpSection["Username"];
                 var password = smtpSection["Password"];
+                var from = smtpSection["From"];
+                if (string.IsNullOrWhiteSpace(from))
+                    from = "noreply@bikya.com";
 
                 // Check if we have valid SMTP configuration
                 if (string.IsNullOrEmpty(host) || string.IsNullOrEmpty(username) || 
@@ -53,7 +71,7 @@ namespace Bikya.Services.Services
                 message.Subject = subject;
                 message.Body = body;
                 message.IsBodyHtml = true;
-                message.From = new MailAddress(username);
+                message.From = new MailAddress(from);
 
                 using var client = new SmtpClient(host, port)
                 {
@@ -101,5 +119,6 @@ namespace Bikya.Services.Services
                 throw new InvalidOperationException($"Failed to send email: {ex.Message}", ex);
             }
         }
+        */
     }
-} 
+}

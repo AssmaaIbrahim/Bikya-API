@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Bikya.DTOs.UserDTOs;
 namespace Bikya.Services.Interfaces
 {
-    public  interface  IUserService
+    public interface IUserService
     {
         Task<ApiResponse<UserProfileDto>> GetByIdAsync(int id);
 

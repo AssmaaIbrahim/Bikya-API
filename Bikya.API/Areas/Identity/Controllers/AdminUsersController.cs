@@ -33,7 +33,7 @@ namespace Bikya.API.Areas.Identity.Controllers
         /// <returns>Paginated list of users</returns>
         [HttpGet]
         public async Task<IActionResult> GetAll(
-            [FromQuery] string? search, 
+            [FromQuery] string? search,
             [FromQuery] string? status,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
@@ -286,7 +286,7 @@ namespace Bikya.API.Areas.Identity.Controllers
         /// <param name="pageSize">Page size (default: 10, max: 100)</param>
         /// <returns>User activity logs</returns>
         [HttpGet("{id}/activity")]
-        public async Task<IActionResult> GetUserActivity(int id, 
+        public async Task<IActionResult> GetUserActivity(int id,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
