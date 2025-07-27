@@ -21,5 +21,7 @@ namespace Bikya.Data.Repositories.Interfaces
         Task<bool> ExistsByNameExcludingIdAsync(string name, int excludeId, CancellationToken cancellationToken = default);
 
         Task<IEnumerable<Category>> GetOrderedByCreatedDateAsync(CancellationToken cancellationToken = default);
+        Task<List<Category>> GetAllAsync(string? search = null);
+        Task AddRangeAsync(List<Category> categories);
     }
 }

@@ -28,13 +28,28 @@ namespace Bikya.API.Areas.Category
         /// <param name="pageSize">Page size</param>
         /// <param name="search">Search term</param>
         /// <returns>Paginated list of categories</returns>
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 10, [FromQuery] string? search = null)
+        [HttpGet("paged")]
+        public async Task<IActionResult> GetPaged([FromQuery] int page = 1, [FromQuery] int pageSize = 9, [FromQuery] string? search = null)
         {
-            var response = await _service.GetAllAsync(page, pageSize, search);
+            var response = await _service.GetPaginatedAsync(page, pageSize, search);
             return StatusCode(response.StatusCode, response);
         }
 
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAll([FromQuery] string? search = null)
+        {
+            var response = await _service.GetAllAsync(search);
+            return StatusCode(response.StatusCode, response);
+        }
+
+
+        [HttpPost("bulk")]
+        //[Authorize(Roles = "Admin")]
+        public async Task<IActionResult> CreateBulk([FromBody] BulkCreateCategoryDTO request)
+        {
+            var response = await _service.CreateBulkAsync(request.Categories);
+            return StatusCode(response.StatusCode, response);
+        }
         /// <summary>
         /// Gets a category by ID.
         /// </summary>

@@ -17,10 +17,10 @@ namespace Bikya.Data.Models
 
         public string? IconUrl { get; set; }
 
-        // public int? ParentCategoryId { get; set; }
-        // public Category? ParentCategory { get; set; }
+        public int? ParentCategoryId { get; set; }
+        public Category? ParentCategory { get; set; }
 
-      //  public ICollection<Category>? SubCategories { get; set; }
+        public ICollection<Category>? SubCategories { get; set; }
 
         public ICollection<Product> Products { get; set; }
 
@@ -29,5 +29,6 @@ namespace Bikya.Data.Models
         // علاقة One-to-Many مع Product
     }
 }
+
 
     

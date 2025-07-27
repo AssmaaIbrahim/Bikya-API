@@ -21,7 +21,7 @@ namespace Bikya.Services.Services
             _categoryRepository = categoryRepository;
         }
 
-        public async Task<ApiResponse<object>> GetAllAsync(int page = 1, int pageSize = 10, string? search = null)
+        public async Task<ApiResponse<PaginatedCategoryResponse>> GetPaginatedAsync(int page = 1, int pageSize = 9, string? search = null)
         {
             var (categories, totalCount) = await _categoryRepository.GetPaginatedAsync(page, pageSize, search);
 
@@ -29,17 +29,27 @@ namespace Bikya.Services.Services
 
             var result = categories.Select(ToCategoryDTO).ToList();
 
-            var responseData = new
+            var response = new PaginatedCategoryResponse
             {
-                items = result,
-                totalCount = totalCount,
-                totalPages = totalPages,
-                currentPage = page,
-                pageSize = pageSize
+                Items = result,
+                TotalCount = totalCount,
+                TotalPages = totalPages,
+                CurrentPage = page,
+                PageSize = pageSize
             };
-
-            return ApiResponse<object>.SuccessResponse(responseData, "Categories retrieved with pagination");
+            return ApiResponse<PaginatedCategoryResponse>.SuccessResponse(response, "Categories retrieved with pagination");
         }
+
+        // ✅ Without pagination
+        public async Task<ApiResponse<List<CategoryDTO>>> GetAllAsync(string? search = null)
+        {
+            var categories = await _categoryRepository.GetAllAsync(search);
+            var result = categories.Select(ToCategoryDTO).ToList();
+
+            return ApiResponse<List<CategoryDTO>>.SuccessResponse(result, "Categories retrieved successfully");
+        }
+
+
 
         public async Task<ApiResponse<CategoryDTO>> GetByIdAsync(int id)
         {
@@ -59,6 +69,26 @@ namespace Bikya.Services.Services
                 return ApiResponse<CategoryDTO>.ErrorResponse("Category not found", 404);
 
             return ApiResponse<CategoryDTO>.SuccessResponse(ToCategoryDTO(category), "Category retrieved successfully");
+        }
+        public async Task<ApiResponse<int>> CreateBulkAsync(List<CreateCategoryDTO> dtos)
+        {
+            if (dtos == null || !dtos.Any())
+            {
+                return ApiResponse<int>.ErrorResponse("No categories provided.", 404);
+            }
+
+            var categories = dtos.Select(dto => new Category
+            {
+                Name = dto.Name,
+                Description = dto.Description,
+                IconUrl = dto.IconUrl,
+                ParentCategoryId = dto.ParentCategoryId,
+                CreatedAt = DateTime.UtcNow
+            }).ToList();
+
+            await _categoryRepository.AddRangeAsync(categories);
+
+            return ApiResponse<int>.SuccessResponse(categories.Count, "Categories created successfully.");
         }
 
         public async Task<ApiResponse<CategoryDTO>> AddAsync(CreateCategoryDTO dto)

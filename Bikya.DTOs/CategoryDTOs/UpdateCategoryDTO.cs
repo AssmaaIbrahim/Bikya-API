@@ -21,5 +21,7 @@ namespace Bikya.DTOs.CategoryDTOs
 
         public string? IconUrl { get; set; }
 
+        public string? parentName { get; set; }
+        public int? ParentCategoryId { set; get; }
     }
 }

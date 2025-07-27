@@ -10,7 +10,7 @@ namespace Bikya.Data.Repositories
     {
         private new readonly BikyaContext _context;
 
-        public CategoryRepository(BikyaContext context, ILogger<CategoryRepository> logger) 
+        public CategoryRepository(BikyaContext context, ILogger<CategoryRepository> logger)
             : base(context, logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -175,7 +175,7 @@ namespace Bikya.Data.Repositories
             try
             {
                 base.Update(entity);
-                
+
                 // Preserve CreatedAt field during updates
                 _context.Entry(entity).Property(e => e.CreatedAt).IsModified = false;
             }
@@ -185,5 +185,23 @@ namespace Bikya.Data.Repositories
                 throw;
             }
         }
+
+        public async Task AddRangeAsync(List<Category> categories)
+        {
+            await _context.Categories.AddRangeAsync(categories);
+            await _context.SaveChangesAsync();
+        }
+        public async Task<List<Category>> GetAllAsync(string? search = null)
+        {
+            var query = _context.Categories.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(c => c.Name.Contains(search));
+            }
+
+            return await query.ToListAsync();
+        }
+
     }
 }
