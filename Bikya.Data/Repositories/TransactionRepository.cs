@@ -26,30 +26,16 @@ namespace Bikya.Data.Repositories
                 .FirstOrDefaultAsync(t => t.Id == transactionId, cancellationToken);
         }
 
-        public async Task<Transaction?> GetTransactionByIdAndWalletAsync(int transactionId, int walletId, CancellationToken cancellationToken = default)
-        {
-            return await _context.Transactions
-                .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.Id == transactionId && t.WalletId == walletId, cancellationToken);
-        }
+       
 
-        public async Task<List<Transaction>> GetTransactionsByWalletIdAsync(int walletId, CancellationToken cancellationToken = default)
-        {
-            return await _context.Transactions
-                .AsNoTracking()
-                .Where(t => t.WalletId == walletId)
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync(cancellationToken);
-        }
+       
 
         public async Task<List<Transaction>> GetTransactionsByUserIdAsync(int userId, CancellationToken cancellationToken = default)
         {
             return await _context.Transactions
-                .AsNoTracking()
-                .Include(t => t.Wallet)
-                .Where(t => t.Wallet.UserId == userId)
-                .OrderByDescending(t => t.CreatedAt)
-                .ToListAsync(cancellationToken);
+     .AsNoTracking()
+     .OrderByDescending(t => t.CreatedAt)
+     .ToListAsync(cancellationToken);
         }
 
         public async Task<List<Transaction>> GetTransactionsByTypeAsync(TransactionType type, CancellationToken cancellationToken = default)
@@ -100,13 +86,7 @@ namespace Bikya.Data.Repositories
                 .SumAsync(t => t.Amount, cancellationToken);
         }
 
-        public async Task<decimal> GetTotalAmountByWalletAsync(int walletId, CancellationToken cancellationToken = default)
-        {
-            return await _context.Transactions
-                .AsNoTracking()
-                .Where(t => t.WalletId == walletId && t.Status == TransactionStatus.Completed)
-                .SumAsync(t => t.Amount, cancellationToken);
-        }
+      
 
         public async Task<int> GetTransactionsCountByTypeAsync(TransactionType type, CancellationToken cancellationToken = default)
         {

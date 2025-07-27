@@ -36,5 +36,20 @@ namespace Bikya.Data.Repositories
         {
             await _context.SaveChangesAsync();
         }
+        public async Task<Payment?> GetByStripeSessionIdAsync(string sessionId)
+        {
+            return await _context.Payments
+                .Include(p => p.Order)
+                .FirstOrDefaultAsync(p => p.StripeSessionId == sessionId);
+        }
+        public async Task<IEnumerable<Payment>> GetPaymentsByOrderIdAsync(int orderId)
+        {
+            return await _context.Payments
+                .Where(p => p.OrderId == orderId)
+                .ToListAsync();
+        }
+
+
+
     }
 } 

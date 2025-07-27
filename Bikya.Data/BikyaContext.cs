@@ -19,7 +19,7 @@ namespace Bikya.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<ShippingInfo> ShippingInfos { get; set; }
         public DbSet<Category> Categories { get; set; }
-        public DbSet<Wallet> Wallets { get; set; }
+       // public DbSet<Wallet> Wallets { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<ExchangeRequest> ExchangeRequests { get; set; }
         public DbSet<Payment> Payments { get; set; }
@@ -33,9 +33,11 @@ namespace Bikya.Data
             modelBuilder.ApplyConfiguration(new OrderConfiguration());
             modelBuilder.ApplyConfiguration(new ShippingInfoConfiguration());
             modelBuilder.ApplyConfiguration(new CategoryConfiguration());
-            modelBuilder.ApplyConfiguration(new WalletConfiguration());
+           // modelBuilder.ApplyConfiguration(new WalletConfiguration());
             modelBuilder.ApplyConfiguration(new TransactionConfiguration());
             modelBuilder.ApplyConfiguration(new ExchangeRequestConfiguration());
+            modelBuilder.ApplyConfiguration(new PaymentConfiguration());
+
 
             base.OnModelCreating(modelBuilder);
         }

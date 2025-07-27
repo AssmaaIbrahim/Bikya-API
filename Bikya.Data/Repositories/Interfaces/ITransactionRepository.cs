@@ -9,12 +9,6 @@ namespace Bikya.Data.Repositories.Interfaces
     {
         Task<Transaction?> GetTransactionByIdAsync(int transactionId, CancellationToken cancellationToken = default);
 
-        Task<Transaction?> GetTransactionByIdAndWalletAsync(int transactionId, int walletId, CancellationToken cancellationToken = default);
-
-        Task<List<Transaction>> GetTransactionsByWalletIdAsync(int walletId, CancellationToken cancellationToken = default);
-
-        Task<List<Transaction>> GetTransactionsByUserIdAsync(int userId, CancellationToken cancellationToken = default);
-
         Task<List<Transaction>> GetTransactionsByTypeAsync(TransactionType type, CancellationToken cancellationToken = default);
 
         Task<List<Transaction>> GetTransactionsByStatusAsync(TransactionStatus status, CancellationToken cancellationToken = default);
@@ -25,7 +19,6 @@ namespace Bikya.Data.Repositories.Interfaces
 
         Task<decimal> GetTotalAmountByTypeAsync(TransactionType type, CancellationToken cancellationToken = default);
 
-        Task<decimal> GetTotalAmountByWalletAsync(int walletId, CancellationToken cancellationToken = default);
 
         Task<int> GetTransactionsCountByTypeAsync(TransactionType type, CancellationToken cancellationToken = default);
 

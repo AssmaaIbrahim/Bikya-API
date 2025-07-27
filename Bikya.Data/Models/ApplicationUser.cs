@@ -11,7 +11,7 @@ namespace Bikya.Data.Models
         public string? Address { get; set; } // Nullable string
         public bool IsVerified { get; set; }
         public ICollection<Product>? Products { get; set; }
-        public Wallet? Wallet { get; set; }
+        //public Wallet? Wallet { get; set; }
         public ICollection<Review>? ReviewsWritten { get; set; }
         public ICollection<Review>? ReviewsReceived { get; set; }
         public ICollection<Order>? OrdersBought { get; set; }

@@ -48,11 +48,11 @@ namespace Bikya.Data.Configurations
                    .HasForeignKey(o => o.SellerId)
                    .OnDelete(DeleteBehavior.Restrict);
 
-            // Wallet (1:1)
-            builder.HasOne(u => u.Wallet)
-                   .WithOne(w => w.User)
-                   .HasForeignKey<Wallet>(w => w.UserId)
-                   .OnDelete(DeleteBehavior.Cascade);
+            //// Wallet (1:1)
+            //builder.HasOne(u => u.Wallet)
+            //       .WithOne(w => w.User)
+            //       .HasForeignKey<Wallet>(w => w.UserId)
+            //       .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

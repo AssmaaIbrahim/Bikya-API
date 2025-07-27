@@ -18,5 +18,7 @@ namespace Bikya.DTOs.UserDTOs
         [StringLength(500, ErrorMessage = "Profile image URL must be less than 500 characters.")]
         [Url(ErrorMessage = "Invalid profile image URL.")]
         public string? ProfileImageUrl { get; set; }
+        public string? PhoneNumber { get; set; }
+
     }
 }

@@ -9,26 +9,22 @@ namespace Bikya.Data.Models
 {
     public class Transaction
     {
+       
         public int Id { get; set; }
-
         public decimal Amount { get; set; }
-
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public TransactionType Type { get; set; }
         public TransactionStatus Status { get; set; } = TransactionStatus.Pending;
-
         public string? Description { get; set; }
-
-        // Foreign key to Wallet
-        public int WalletId { get; set; }
-        public Wallet Wallet { get; set; }
 
         public int? RelatedOrderId { get; set; }
 
-        // الربط مع الدفع الخارجي
         public int? PaymentId { get; set; }
+
         public Payment? Payment { get; set; }
+
+
 
     }
 
