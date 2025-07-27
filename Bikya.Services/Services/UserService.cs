@@ -117,6 +117,7 @@ namespace Bikya.Services.Services
             user.FullName = dto.FullName ?? user.FullName;
             user.ProfileImageUrl = dto.ProfileImageUrl ?? user.ProfileImageUrl;
             user.Address = dto.Address ?? user.Address;
+            user.PhoneNumber =dto.PhoneNumber ?? user.PhoneNumber;
 
             var result = await _userRepository.UpdateUserAsync(user);
             if (!result.Succeeded)
