@@ -8,7 +8,11 @@ namespace Bikya.Data.Repositories.Interfaces
     {
         Task<Payment> AddAsync(Payment payment);
         Task<Payment?> GetByIdAsync(int id);
+        Task<Payment?> GetByStripeSessionIdAsync(string sessionId); // ?
         Task<IEnumerable<Payment>> GetByUserIdAsync(int userId);
+        Task<IEnumerable<Payment>> GetPaymentsByOrderIdAsync(int orderId);
+
         Task SaveChangesAsync();
     }
-} 
+
+}

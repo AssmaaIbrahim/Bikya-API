@@ -1,15 +1,13 @@
-using Bikya.Data.Enums;
 using System;
 
 namespace Bikya.DTOs.PaymentDTOs
 {
-    public class PaymentDto
+    public class PaymentSummaryDto
     {
-        public int Id { get; set; }
+        public int PaymentId { get; set; }
         public decimal Amount { get; set; }
         public string Status { get; set; } = string.Empty;
-        public int? OrderId { get; set; }
-        public string? StripeUrl { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string Description { get; set; } = string.Empty;
     }
 } 

@@ -3,6 +3,7 @@ using Bikya.Data;
 using Bikya.Data.Models;
 using Bikya.Data.Repositories;
 using Bikya.Data.Repositories.Interfaces;
+using Bikya.DTOs.StripeDTOs;
 using Bikya.Services.Interfaces;
 using Bikya.Services.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -49,13 +50,11 @@ namespace Bikya
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
             builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
-            builder.Services.AddScoped<IWalletRepository, WalletRepository>();
             builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             builder.Services.AddScoped<IShippingServiceRepository, ShippingServiceRepository>();
 
             // Register Business Services
-            builder.Services.AddScoped<IWalletService, WalletService>();
             builder.Services.AddScoped<IPaymentService, PaymentService>();
             builder.Services.AddScoped<IExchangeRequestService, ExchangeRequestService>();
             builder.Services.AddScoped<IOrderService, OrderService>();
@@ -66,6 +65,10 @@ namespace Bikya
             builder.Services.AddScoped<ProductImageService, ProductImageService>();
 
             builder.Services.AddHttpContextAccessor();
+            builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+            builder.Services.AddScoped<IStripeService, StripeService>();
+            builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+            builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
             // Configure Identity
             builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>

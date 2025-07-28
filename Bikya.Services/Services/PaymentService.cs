@@ -1,144 +1,180 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Bikya.Data.Enums;
 using Bikya.Data.Models;
 using Bikya.Data.Repositories.Interfaces;
+using Bikya.Data.Response;
 using Bikya.DTOs.PaymentDTOs;
 using Bikya.Services.Interfaces;
 using System;
-using Bikya.Data.Response;
-using Stripe;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Bikya.Services.Services
 {
     public class PaymentService : IPaymentService
     {
         private readonly IPaymentRepository _paymentRepository;
-        private readonly IWalletRepository _walletRepository;
         private readonly ITransactionRepository _transactionRepository;
+        private readonly IStripeService _stripeService;
+        private readonly IOrderRepository _orderRepository;
 
-        public PaymentService(
-            IPaymentRepository paymentRepository,
-            IWalletRepository walletRepository,
-            ITransactionRepository transactionRepository)
+        public PaymentService(IPaymentRepository paymentRepository,
+                              ITransactionRepository transactionRepository,
+                              IStripeService stripeService,
+                              IOrderRepository orderRepository)
         {
             _paymentRepository = paymentRepository;
-            _walletRepository = walletRepository;
             _transactionRepository = transactionRepository;
+            _stripeService = stripeService;
+            _orderRepository = orderRepository;
         }
 
-        public async Task<ApiResponse<PaymentDto>> CreatePaymentAsync(CreatePaymentDto dto)
+        public async Task<ApiResponse<PaymentResponseDto>> CreatePaymentAsync(PaymentRequestDto dto)
         {
             try
             {
+                // Step 1: Validate order exists and belongs to user
+                var order = await _orderRepository.GetByIdAsync(dto.OrderId);
+                if (order == null)
+                {
+                    return ApiResponse<PaymentResponseDto>.ErrorResponse(
+                        "Order not found", 404, new List<string> { "The specified order does not exist" });
+                }
+
+                if (order.BuyerId != dto.UserId)
+                {
+                    return ApiResponse<PaymentResponseDto>.ErrorResponse(
+                        "Unauthorized", 403, new List<string> { "You can only pay for your own orders" });
+                }
+
+                // Step 2: Check if order is already paid
+                if (order.Status == OrderStatus.Paid)
+                {
+                    return ApiResponse<PaymentResponseDto>.ErrorResponse(
+                        "Order already paid", 400, new List<string> { "This order has already been paid for" });
+                }
+
+                // Step 3: Validate amount matches order total
+                if (order.TotalAmount != dto.Amount)
+                {
+                    return ApiResponse<PaymentResponseDto>.ErrorResponse(
+                        "Amount mismatch", 400, new List<string> { $"Order total amount is {order.TotalAmount}, but payment amount is {dto.Amount}" });
+                }
+
+                // Step 4: Create Stripe session
+                var session = await _stripeService.CreateCheckoutSessionAsync(dto.Amount, dto.OrderId);
+
+                // Step 5: Create payment record in database
                 var payment = new Payment
                 {
                     Amount = dto.Amount,
-                    UserId = dto.UserId,
                     OrderId = dto.OrderId,
-                    Gateway = dto.Gateway,
-                    Description = dto.Description,
-                    Status = PaymentStatus.Pending
+                    UserId = dto.UserId,
+                    Status = PaymentStatus.Pending,
+                    Gateway = PaymentGateway.Stripe,
+                    StripeSessionId = session.Id,
+                    Description = dto.Description ?? $"Payment for Order #{dto.OrderId}"
                 };
 
-                PaymentDto? paymentDto = null;
+                var createdPayment = await _paymentRepository.AddAsync(payment);
 
-                if (dto.Gateway == PaymentGateway.Mock)
+                // Step 6: Create response
+                var response = new PaymentResponseDto
                 {
-                    payment.Status = PaymentStatus.Completed;
-                    payment.GatewayReference = $"MOCK-{System.Guid.NewGuid()}";
-                }
-                else if (dto.Gateway == PaymentGateway.Stripe)
-                {
-                    // Stripe integration (test mode)
-                    // ملاحظة: يجب إضافة Stripe.net للمشروع وتهيئة StripeConfiguration.ApiKey في Startup
-                    var options = new Stripe.PaymentIntentCreateOptions
-                    {
-                        Amount = (long)(dto.Amount * 100), // Stripe uses smallest currency unit
-                        Currency = "egp",
-                        Metadata = new Dictionary<string, string>
-                        {
-                            { "order_id", dto.OrderId?.ToString() ?? "" },
-                            { "user_id", dto.UserId.ToString() }
-                        }
-                    };
-                    var service = new Stripe.PaymentIntentService();
-                    var paymentIntent = await service.CreateAsync(options);
-                    payment.GatewayReference = paymentIntent.Id;
-                    // نحتفظ بالحالة Pending حتى يتم تأكيد الدفع عبر Webhook
-                    payment.Status = PaymentStatus.Pending;
-                }
-                else if (dto.Gateway == PaymentGateway.PayPal)
-                {
-                    // PayPal integration (test mode)
-                    // هنا سننشئ رابط دفع وهمي (في التطبيق الحقيقي ستستخدم PayPal API)
-                    payment.GatewayReference = $"PAYPAL-TEST-{System.Guid.NewGuid()}";
-                    payment.Status = PaymentStatus.Pending;
-                }
+                    PaymentId = createdPayment.Id,
+                    Amount = createdPayment.Amount,
+                    OrderId = createdPayment.OrderId.Value,
+                    Status = createdPayment.Status.ToString(),
+                    StripeUrl = session.Url,
+                    StripeSessionId = session.Id,
+                    CreatedAt = createdPayment.CreatedAt,
+                    Message = "Payment session created successfully. Redirect user to StripeUrl to complete payment."
+                };
 
-                var result = await _paymentRepository.AddAsync(payment);
-                paymentDto = ToDto(result);
-
-                // Stripe: أضف clientSecret
-                if (dto.Gateway == PaymentGateway.Stripe)
-                {
-                    // Stripe integration
-                    var service = new Stripe.PaymentIntentService();
-                    var paymentIntent = await service.GetAsync(payment.GatewayReference);
-                    paymentDto.ClientSecret = paymentIntent.ClientSecret;
-                }
-                // PayPal: أضف paymentUrl وهمي (في التطبيق الحقيقي ستستخدم PayPal API)
-                if (dto.Gateway == PaymentGateway.PayPal)
-                {
-                    paymentDto.PaymentUrl = $"https://www.sandbox.paypal.com/checkoutnow?token={payment.GatewayReference}";
-                }
-
-                if (result.Status == PaymentStatus.Completed)
-                {
-                    var wallet = await _walletRepository.GetWalletByUserIdAsync(result.UserId);
-                    if (wallet == null)
-                        return ApiResponse<PaymentDto>.ErrorResponse("Wallet not found", 404);
-                    if (wallet.IsLocked)
-                        return ApiResponse<PaymentDto>.ErrorResponse("Wallet is locked", 403);
-                    if (wallet.Balance < result.Amount)
-                        return ApiResponse<PaymentDto>.ErrorResponse("Insufficient balance", 400);
-
-                    wallet.Balance -= result.Amount;
-                    await _walletRepository.UpdateWalletBalanceAsync(wallet.UserId, wallet.Balance);
-
-                    var transaction = new Transaction
-                    {
-                        Amount = result.Amount,
-                        Type = TransactionType.Payment,
-                        Status = TransactionStatus.Completed,
-                        WalletId = wallet.Id,
-                        PaymentId = result.Id,
-                        RelatedOrderId = result.OrderId,
-                        Description = $"Payment via {result.Gateway} - {result.GatewayReference}"
-                    };
-                    await _transactionRepository.AddAsync(transaction);
-                    await _walletRepository.SaveChangesAsync();
-                }
-
-                return ApiResponse<PaymentDto>.SuccessResponse(paymentDto, "Payment created successfully", 201);
-            }
-            catch (StripeException stripeEx)
-            {
-                // Return Stripe-specific error message
-                return ApiResponse<PaymentDto>.ErrorResponse($"Stripe error: {stripeEx.Message}", 500);
+                return ApiResponse<PaymentResponseDto>.SuccessResponse(response, "Payment session created successfully");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Stripe/PayPal Error: " + ex.ToString());
-                return ApiResponse<PaymentDto>.ErrorResponse("Technical error: " + ex.Message, 500);
+                return ApiResponse<PaymentResponseDto>.ErrorResponse(
+                    "Payment creation failed", 500, new List<string> { ex.Message });
             }
         }
 
-        public async Task<PaymentDto?> GetPaymentByIdAsync(int id)
+        public async Task<ApiResponse<PaymentStatusDto>> GetPaymentStatusAsync(int paymentId)
         {
-            var payment = await _paymentRepository.GetByIdAsync(id);
-            return payment == null ? null : ToDto(payment);
+            try
+            {
+                var payment = await _paymentRepository.GetByIdAsync(paymentId);
+                if (payment == null)
+                {
+                    return ApiResponse<PaymentStatusDto>.ErrorResponse(
+                        "Payment not found", 404, new List<string> { "The specified payment does not exist" });
+                }
+
+                var response = new PaymentStatusDto
+                {
+                    PaymentId = payment.Id,
+                    Amount = payment.Amount,
+                    OrderId = payment.OrderId ?? 0,
+                    Status = payment.Status.ToString(),
+                    StripeSessionId = payment.StripeSessionId ?? string.Empty,
+                    CreatedAt = payment.CreatedAt,
+                    Message = GetStatusMessage(payment.Status)
+                };
+
+                return ApiResponse<PaymentStatusDto>.SuccessResponse(response);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<PaymentStatusDto>.ErrorResponse(
+                    "Failed to get payment status", 500, new List<string> { ex.Message });
+            }
+        }
+
+        public async Task<ApiResponse<PaymentSummaryDto>> GetPaymentSummaryAsync(int paymentId)
+        {
+            try
+            {
+                var payment = await _paymentRepository.GetByIdAsync(paymentId);
+                if (payment == null)
+                {
+                    return ApiResponse<PaymentSummaryDto>.ErrorResponse(
+                        "Payment not found", 404, new List<string> { "The specified payment does not exist" });
+                }
+
+                var response = new PaymentSummaryDto
+                {
+                    PaymentId = payment.Id,
+                    Amount = payment.Amount,
+                    Status = payment.Status.ToString(),
+                    CreatedAt = payment.CreatedAt,
+                    Description = payment.Description ?? string.Empty
+                };
+
+                return ApiResponse<PaymentSummaryDto>.SuccessResponse(response);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<PaymentSummaryDto>.ErrorResponse(
+                    "Failed to get payment summary", 500, new List<string> { ex.Message });
+            }
+        }
+
+        private string GetStatusMessage(PaymentStatus status)
+        {
+            return status switch
+            {
+                PaymentStatus.Pending => "Payment is pending. Please complete the payment on Stripe.",
+                PaymentStatus.Paid => "Payment completed successfully.",
+                PaymentStatus.Failed => "Payment failed. Please try again.",
+                _ => "Unknown payment status."
+            };
+        }
+
+        public async Task<IEnumerable<PaymentDto>> GetPaymentsByOrderIdAsync(int orderId)
+        {
+            var payments = await _paymentRepository.GetPaymentsByOrderIdAsync(orderId);
+            return payments.Select(ToDto);
         }
 
         public async Task<IEnumerable<PaymentDto>> GetPaymentsByUserIdAsync(int userId)
@@ -153,14 +189,11 @@ namespace Bikya.Services.Services
             {
                 Id = p.Id,
                 Amount = p.Amount,
-                UserId = p.UserId,
                 OrderId = p.OrderId,
-                Gateway = p.Gateway,
-                GatewayReference = p.GatewayReference,
-                Description = p.Description,
-                CreatedAt = p.CreatedAt,
-                Status = p.Status
+                Status = p.Status.ToString(),
+                StripeUrl = p.StripeSessionId,
+                CreatedAt = p.CreatedAt
             };
         }
     }
-} 
+}

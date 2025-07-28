@@ -28,15 +28,10 @@ namespace Bikya.Data.Configurations
             builder.Property(t => t.Description)
                    .HasMaxLength(500);
 
-            builder.HasOne(t => t.Wallet)
-                   .WithMany(w => w.Transactions)
-                   .HasForeignKey(t => t.WalletId)
-                   .OnDelete(DeleteBehavior.Cascade);
-
             builder.HasOne(t => t.Payment)
-                   .WithMany()
-                   .HasForeignKey(t => t.PaymentId)
-                   .OnDelete(DeleteBehavior.SetNull);
+         .WithMany(p => p.Transactions)
+         .HasForeignKey(t => t.PaymentId)
+         .OnDelete(DeleteBehavior.NoAction);
         }
     }
 }
