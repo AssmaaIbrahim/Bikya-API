@@ -1,6 +1,7 @@
-﻿using Bikya.Data.Repositories.Interfaces;
-using Bikya.Data.Models;
+﻿using Bikya.Data.Models;
+using Bikya.Data.Repositories.Interfaces;
 using Bikya.DTOs.ProductDTO;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -115,6 +116,21 @@ namespace Bikya.Services.Services
                 throw new IOException($"Failed to save product image to disk: {ex.Message}");
             }
 
+            //make all images not main if this image main
+            if (productImageDTO.IsMain)
+            {
+                var existingImages = await _productImageRepository.GetImagesByProductIdAsync(productImageDTO.ProductId, cancellationToken);
+
+                foreach (var img in existingImages)
+                {
+                    if (img.IsMain)
+                    {
+                        img.IsMain = false;
+                        await _productImageRepository.UpdateAsync(img, cancellationToken);
+                    }
+                }
+            }
+
             // Create ProductImage entity (store only the relative path, not the image itself)
             var image = new ProductImage
             {
@@ -122,6 +138,9 @@ namespace Bikya.Services.Services
                 ImageUrl = $"/Images/Products/{fileName}", // فقط المسار النسبي
                 IsMain = productImageDTO.IsMain
             };
+
+            product.IsApproved = false;
+            await _productRepository.UpdateAsync(product, cancellationToken);
 
             // Save to database
             await _productImageRepository.AddAsync(image, cancellationToken);
@@ -156,14 +175,16 @@ namespace Bikya.Services.Services
 
             return image;
         }
-
-        public async Task UpdateProductImageAsync(ProductImage productImage, int userId, CancellationToken cancellationToken = default)
+       
+        public async Task UpdateProductImageAsync(int id, int userId, string rootPath, IFormFile ImageFile, CancellationToken cancellationToken = default)
         {
+            if (ImageFile == null) 
+                throw new ArgumentNullException(nameof(ImageFile));
+            // Validate Image exists
+            var productImage = await _productImageRepository.GetByIdAsync(id, cancellationToken);
             if (productImage == null)
-                throw new ArgumentNullException(nameof(productImage));
+                throw new ArgumentException("Product Image not found");
 
-            if (string.IsNullOrWhiteSpace(productImage.ImageUrl))
-                throw new ArgumentException("Image URL cannot be null or empty");
 
             // Validate product exists
             var product = await _productRepository.GetByIdAsync(productImage.ProductId, cancellationToken);
@@ -178,7 +199,57 @@ namespace Bikya.Services.Services
             if (product.Status != Data.Enums.ProductStatus.Available)
                 throw new InvalidOperationException("You cannot modify images for a product that is in Process");
 
-            await _productImageRepository.UpdateAsync(productImage, cancellationToken);
+
+            var safeFileName = ImageFile.FileName
+              .Replace(" ", "-")
+              .Replace("(", "")
+              .Replace(")", "")
+              .Replace("&", "")
+              .Replace("#", "")
+              .Replace("%", "");
+
+            // Generate unique filename
+            var fileName = $"{Guid.NewGuid()}_{safeFileName}";
+            var folderPath = Path.Combine(rootPath, "Images", "Products");
+            var filePath = Path.Combine(folderPath, fileName);
+
+            // Ensure directory exists
+            EnsureDirectoryExists(folderPath);
+
+            // Save file to disk with error handling
+            try
+            {
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await ImageFile.CopyToAsync(stream, cancellationToken);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new IOException($"Failed to save product image to disk: {ex.Message}");
+            }
+           
+            // delete old image from disk 
+            var oldFileName = productImage?.ImageUrl.TrimStart('/');
+            var oldFilePath = Path.Combine(rootPath, oldFileName);
+            DeleteFileIfExists(oldFilePath);
+
+
+
+            // Create ProductImage entity (store only the relative path, not the image itself)
+            var image = new ProductImage
+            {
+                Id = id,
+                ProductId = productImage.ProductId,
+                ImageUrl = $"/Images/Products/{fileName}", 
+                IsMain = productImage.IsMain,
+                CreatedAt = DateTime.Now,
+
+            };
+
+       
+
+            await _productImageRepository.UpdateAsync(image, cancellationToken);
         }
 
         public async Task DeleteProductImageAsync(int id, int userId, string rootPath, CancellationToken cancellationToken = default)
@@ -194,6 +265,10 @@ namespace Bikya.Services.Services
             // Check product status
             if (productImage.Product.Status != Data.Enums.ProductStatus.Available)
                 throw new InvalidOperationException("You cannot modify images for a product that is in Process");
+
+            //checked if it is main
+            if (productImage.IsMain ==true )
+                throw new InvalidOperationException("You cannot delete main images for a product");
 
             // Delete file from disk
             var fileName = productImage.ImageUrl.TrimStart('/');
@@ -249,8 +324,11 @@ namespace Bikya.Services.Services
             // Set all images as not main
             foreach (var img in allImages)
             {
-                img.IsMain = false;
-                await _productImageRepository.UpdateAsync(img, cancellationToken);
+                if (img.IsMain && img.Id != image.Id)
+                {
+                    img.IsMain = false;
+                    await _productImageRepository.UpdateAsync(img, cancellationToken);
+                }
             }
 
             // Set the selected image as main

@@ -151,7 +151,7 @@ namespace Bikya
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseCors("AllowSpecificOrigin");
-
+            app.UseStaticFiles();
             // Map controllers with areas support
             app.MapControllers();
 

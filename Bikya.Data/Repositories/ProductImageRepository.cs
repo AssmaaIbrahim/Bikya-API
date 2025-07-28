@@ -47,7 +47,7 @@ namespace Bikya.Data.Repositories
             _context.Entry(productImage).State = EntityState.Modified;
 
             // Preserve CreatedAt field during updates
-            _context.Entry(productImage).Property(e => e.CreatedAt).IsModified = false;
+            //_context.Entry(productImage).Property(e => e.CreatedAt).IsModified = true;
 
             await _context.SaveChangesAsync(cancellationToken);
         }

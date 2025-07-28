@@ -30,6 +30,7 @@ namespace Bikya.Data.Repositories.Interfaces
         /// Gets a product by ID with its images and category information.
         /// </summary>
         Task<Product?> GetProductWithImagesByIdAsync(int productId, CancellationToken cancellationToken = default);
+        Task<Product?> GetProductforDeletingAsync(int productId, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all products for a specific user with their images and category information.

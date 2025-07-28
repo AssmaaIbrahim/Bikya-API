@@ -21,8 +21,8 @@ namespace Bikya.API.Areas.Products.Controller
         private readonly IWebHostEnvironment _env;
 
         public ProductController(
-            IWebHostEnvironment env, 
-            ProductService productService, 
+            IWebHostEnvironment env,
+            ProductService productService,
             ProductImageService productImageService)
         {
             _env = env ?? throw new ArgumentNullException(nameof(env));
@@ -139,7 +139,7 @@ namespace Bikya.API.Areas.Products.Controller
         /// <returns>List of user's not approved products</returns>
         /// 
 
-        [HttpGet("user/{userId}/approved")]
+        [HttpGet("approved/user/{userId}")]
         public async Task<IActionResult> GetApprovedProductsByUser(int userId)
         {
             var products = await _productService.GetApprovedProductsByUserAsync(userId);
@@ -190,7 +190,7 @@ namespace Bikya.API.Areas.Products.Controller
         /// <returns>Creation result</returns>
         [Authorize]
         [Consumes("multipart/form-data")]
-        [HttpPost("with-images")]
+        [HttpPost("add")]
         public async Task<IActionResult> CreateProductWithImages([FromForm] CreateProductWithimagesDTO productDTO)
         {
             if (!ModelState.IsValid)
@@ -246,7 +246,7 @@ namespace Bikya.API.Areas.Products.Controller
         /// <returns>Update result</returns>
         [Authorize]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] ProductDTO product)
+        public async Task<IActionResult> UpdateProduct(int id, [FromForm] ProductDTO product)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -315,18 +315,51 @@ namespace Bikya.API.Areas.Products.Controller
         /// </summary>
         /// <param name="id">Image ID</param>
         /// <returns>Image deletion result</returns>
+        //[Authorize]
+        //[HttpPut("image/{id}")]
+        //public async Task<IActionResult> updatetImage(int id,[FromForm] UpdatProductImage dto) 
+        //    {
+        //        if (!TryGetUserId(out int userId))
+        //            return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
+
+        //        var rootPath = _env.WebRootPath;
+        //        if (dto.Image != null)
+        //        {
+        //            await _productImageService.UpdateProductImageAsync(id, userId, rootPath, dto.Image);
+        //        }
+        //        return Ok(ApiResponse<bool>.SuccessResponse(true));
+        //    }
+
+
         [Authorize]
-        [HttpDelete("images/{id}")]
-        public async Task<IActionResult> DeleteProductImage(int id)
+        [HttpPut("image/{id}/set-main")]
+        public async Task<IActionResult> SetMainImage(int id)
         {
             if (!TryGetUserId(out int userId))
                 return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
 
-            var rootPath = _env.WebRootPath;
-            await _productImageService.DeleteProductImageAsync(id, userId, rootPath);
-            return Ok(ApiResponse<bool>.SuccessResponse(true));
+            await _productImageService.SetMainImageAsync(id, userId);
+            return Ok(ApiResponse<bool>.SuccessResponse(true, "Main image updated successfully"));
         }
 
-        #endregion
-    }
-}
+        /// <summary>
+        /// Deletes a product image.
+        /// </summary>
+        /// <param name="id">Image ID</param>
+        /// <returns>Image deletion result</returns>
+        [Authorize]
+            [HttpDelete("image/{id}")]
+            public async Task<IActionResult> DeleteProductImage(int id)
+            {
+                if (!TryGetUserId(out int userId))
+                    return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
+
+                var rootPath = _env.WebRootPath;
+                await _productImageService.DeleteProductImageAsync(id, userId, rootPath);
+                return Ok(ApiResponse<bool>.SuccessResponse(true));
+            }
+
+            #endregion
+        }
+    } 
+

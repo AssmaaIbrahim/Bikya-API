@@ -54,7 +54,8 @@ namespace Bikya.Services.Services
                     UserName=p.User.FullName,
                     Status=p.Status,
                     Images = p.Images.Select(i => new GetProductImageDTO
-                    { ImageUrl = i.ImageUrl,
+                    { Id = i.Id,
+                        ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain }).ToList()
                     
                 });
@@ -89,6 +90,7 @@ namespace Bikya.Services.Services
                     UserName = p.User.FullName,
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
+                        Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
                     }).ToList()
@@ -125,6 +127,7 @@ namespace Bikya.Services.Services
                     UserName = p.User.FullName,
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
+                        Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
                     }).ToList()
@@ -165,6 +168,7 @@ namespace Bikya.Services.Services
                     UserName = product.User.FullName,
                     Images = product.Images.Select(i => new GetProductImageDTO
                     {
+                        Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
                     }).ToList()
@@ -206,6 +210,7 @@ namespace Bikya.Services.Services
                     UserName = p.User.FullName,
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
+                        Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
                     }).ToList()
@@ -247,6 +252,7 @@ namespace Bikya.Services.Services
                     UserName = p.User.FullName,
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
+                        Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
                     }).ToList()
@@ -288,6 +294,7 @@ namespace Bikya.Services.Services
                     UserName = p.User.FullName,
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
+                        Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
                     }).ToList()
@@ -402,7 +409,7 @@ namespace Bikya.Services.Services
                 ValidatePositiveId(id, "Product ID");
                 await ValidateUserExistsAsync(userId, cancellationToken);
 
-                var existing = await _productRepository.GetProductWithImagesByIdAsync(id, cancellationToken);
+                var existing = await _productRepository.GetProductforDeletingAsync(id, cancellationToken);
                 ValidateEntityNotNull(existing, "Product", id);
 
                 await ValidateUserPermissionAsync(userId, existing.UserId!.Value, cancellationToken);
@@ -413,9 +420,12 @@ namespace Bikya.Services.Services
                     throw new ValidationException($"You cannot delete a product that is in {existing.Status} status");
                 }
 
+
                 // Delete associated images first
                 await _productImageService.DeleteAllProductImagesAsync(id, userId, rootPath);
 
+
+                
                 await _productRepository.DeleteAsync(existing, cancellationToken);
                 
                 LogInformation("Product {ProductId} deleted successfully by user {UserId}", id, userId);

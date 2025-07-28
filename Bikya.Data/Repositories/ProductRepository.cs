@@ -40,11 +40,15 @@ namespace Bikya.Data.Repositories
             return await GetProductsWithImagesQuery()
                 .ToListAsync(cancellationToken);
         }
-
+      
         public async Task<Product?> GetProductWithImagesByIdAsync(int productId, CancellationToken cancellationToken = default)
         {
             return await GetProductsWithImagesQuery()
                 .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
+        }
+        public async Task<Product?> GetProductforDeletingAsync(int productId, CancellationToken cancellationToken = default)
+        {
+            return await _context.Products.Include(p=>p.Images).FirstOrDefaultAsync(p=>p.Id == productId, cancellationToken);
         }
 
         public async Task<IEnumerable<Product>> GetProductsByUserAsync(int userId, CancellationToken cancellationToken = default)
@@ -95,8 +99,7 @@ namespace Bikya.Data.Repositories
 
         public async Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
         {
-            product.User = null;
-            //product.Category= null;
+         
             Remove(product);
 
             await SaveChangesAsync(cancellationToken);
