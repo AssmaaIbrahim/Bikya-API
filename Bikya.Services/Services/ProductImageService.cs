@@ -138,9 +138,11 @@ namespace Bikya.Services.Services
                 ImageUrl = $"/Images/Products/{fileName}", // فقط المسار النسبي
                 IsMain = productImageDTO.IsMain
             };
-
-            product.IsApproved = false;
-            await _productRepository.UpdateAsync(product, cancellationToken);
+            if (product.IsApproved)
+            {
+                product.IsApproved = false;
+                await _productRepository.UpdateAsync(product, cancellationToken);
+            }
 
             // Save to database
             await _productImageRepository.AddAsync(image, cancellationToken);

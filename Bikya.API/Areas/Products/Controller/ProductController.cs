@@ -1,6 +1,7 @@
 ﻿using Bikya.Data.Models;
 using Bikya.Data.Response;
 using Bikya.DTOs.ProductDTO;
+using Bikya.Services.Exceptions;
 using Bikya.Services.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,6 +38,27 @@ namespace Bikya.API.Areas.Products.Controller
             return int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
         }
 
+        protected async Task<IActionResult> HandleRequest(Func<Task> action, string successMessage)
+        {
+            try
+            {
+                await action();
+                return Ok(ApiResponse<bool>.SuccessResponse(true, successMessage));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Server error", 500));
+            }
+        }
+
         #endregion
 
         #region Admin Operations
@@ -49,10 +71,35 @@ namespace Bikya.API.Areas.Products.Controller
         [HttpGet("all")]
         public async Task<IActionResult> GetAllProductsWithImages()
         {
-            var products = await _productService.GetAllProductsWithImagesAsync();
-
-
-            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            try
+            {
+                var products = await _productService.GetAllProductsWithImagesAsync();
+                return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<string>.ErrorResponse(ex.Message, 403));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (BusinessException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error", 500));
+            }
         }
 
         /// <summary>
@@ -76,8 +123,35 @@ namespace Bikya.API.Areas.Products.Controller
         [HttpPost("approve/{id}")]
         public async Task<IActionResult> ApproveProduct(int id)
         {
-            await _productService.ApproveProductAsync(id);
-            return Ok(ApiResponse<bool>.SuccessResponse(true));
+            try
+            {
+                await _productService.ApproveProductAsync(id);
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Product approved successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<string>.ErrorResponse(ex.Message, 403));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (BusinessException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error", 500));
+            }
         }
 
         /// <summary>
@@ -89,8 +163,23 @@ namespace Bikya.API.Areas.Products.Controller
         [HttpPost("reject/{id}")]
         public async Task<IActionResult> RejectProduct(int id)
         {
-            await _productService.RejectProductAsync(id);
-            return Ok(ApiResponse<bool>.SuccessResponse(true));
+            try
+            {
+                await _productService.RejectProductAsync(id);
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Product rejected successfully"));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Server error while rejecting product", 500));
+            }
         }
 
         #endregion
@@ -104,8 +193,16 @@ namespace Bikya.API.Areas.Products.Controller
         [HttpGet("approved")]
         public async Task<IActionResult> GetApprovedProductsWithImages()
         {
-            var products = await _productService.GetApprovedProductsWithImagesAsync();
-            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            try
+            {
+                var products = await _productService.GetApprovedProductsWithImagesAsync();
+                return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            }
+            catch (Exception ex)
+            {
+                // You can log here again if you want — or rely on service-level logging
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Failed to retrieve approved products", 500));
+            }
         }
 
         /// <summary>
@@ -116,8 +213,23 @@ namespace Bikya.API.Areas.Products.Controller
         [HttpGet("Product/{id}")]
         public async Task<IActionResult> GetProductById(int id)
         {
-            var product = await _productService.GetProductWithImagesByIdAsync(id);
-            return Ok(ApiResponse<GetProductDTO>.SuccessResponse(product));
+            try
+            {
+                var product = await _productService.GetProductWithImagesByIdAsync(id);
+                return Ok(ApiResponse<GetProductDTO>.SuccessResponse(product));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Failed to retrieve product", 500));
+            }
         }
 
         /// <summary>
@@ -128,8 +240,24 @@ namespace Bikya.API.Areas.Products.Controller
         [HttpGet("user/{userId}")]
         public async Task<IActionResult> GetProductsByUser(int userId)
         {
-            var products = await _productService.GetProductsByUserAsync(userId);
-            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+
+            try
+            {
+                var products = await _productService.GetProductsByUserAsync(userId);
+                return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Failed to retrieve products", 500));
+            }
         }
 
         /// <summary>
@@ -142,8 +270,23 @@ namespace Bikya.API.Areas.Products.Controller
         [HttpGet("approved/user/{userId}")]
         public async Task<IActionResult> GetApprovedProductsByUser(int userId)
         {
-            var products = await _productService.GetApprovedProductsByUserAsync(userId);
-            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            try
+            {
+                var products = await _productService.GetApprovedProductsByUserAsync(userId);
+                return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Failed to retrieve approved products for user", 500));
+            }
         }
 
         /// <summary>
@@ -154,8 +297,23 @@ namespace Bikya.API.Areas.Products.Controller
         [HttpGet("category/{id}")]
         public async Task<IActionResult> GetProductsByCategory(int id)
         {
-            var products = await _productService.GetProductsByCategoryAsync(id);
-            return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            try
+            {
+                var products = await _productService.GetProductsByCategoryAsync(id);
+                return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Failed to retrieve products by category", 500));
+            }
         }
 
         #endregion
@@ -199,44 +357,75 @@ namespace Bikya.API.Areas.Products.Controller
             if (!TryGetUserId(out int userId))
                 return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
 
-            var product = new ProductDTO
-            {
-                Title = productDTO.Title,
-                Description = productDTO.Description,
-                Price = productDTO.Price,
-                IsForExchange = productDTO.IsForExchange,
-                Condition = productDTO.Condition,
-                CategoryId = productDTO.CategoryId
-            };
-
-            var createdProduct = await _productService.CreateProductAsync(product, userId);
             var rootPath = _env.WebRootPath;
 
-            if (productDTO.MainImage != null)
+            try
             {
-                await _productImageService.AddProductImageAsync(new ProductImageDTO
+                var product = new ProductDTO
                 {
-                    ProductId = createdProduct.Id,
-                    Image = productDTO.MainImage,
-                    IsMain = true
-                }, userId, rootPath);
-            }
+                    Title = productDTO.Title,
+                    Description = productDTO.Description,
+                    Price = productDTO.Price,
+                    IsForExchange = productDTO.IsForExchange,
+                    Condition = productDTO.Condition,
+                    CategoryId = productDTO.CategoryId
+                };
 
-            if (productDTO.AdditionalImages?.Any() == true)
-            {
-                foreach (var image in productDTO.AdditionalImages)
+                var createdProduct = await _productService.CreateProductAsync(product, userId);
+
+                // Upload main image
+                if (productDTO.MainImage != null)
                 {
                     await _productImageService.AddProductImageAsync(new ProductImageDTO
                     {
                         ProductId = createdProduct.Id,
-                        Image = image,
-                        IsMain = false
+                        Image = productDTO.MainImage,
+                        IsMain = true
                     }, userId, rootPath);
                 }
-            }
 
-            return Ok(ApiResponse<bool>.SuccessResponse(true));
+                // Upload additional images
+                if (productDTO.AdditionalImages?.Any() == true)
+                {
+                    foreach (var image in productDTO.AdditionalImages)
+                    {
+                        await _productImageService.AddProductImageAsync(new ProductImageDTO
+                        {
+                            ProductId = createdProduct.Id,
+                            Image = image,
+                            IsMain = false
+                        }, userId, rootPath);
+                    }
+                }
+
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Product created successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<string>.ErrorResponse(ex.Message, 403));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (IOException ex)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse($"Image upload failed: {ex.Message}", 500));
+            }
+            catch (ConflictException ex)
+            {
+                return Conflict(ApiResponse<string>.ErrorResponse(ex.Message, 409));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error", 500));
+            }
         }
+
 
         /// <summary>
         /// Updates a product.
@@ -254,10 +443,32 @@ namespace Bikya.API.Areas.Products.Controller
             if (!TryGetUserId(out int userId))
                 return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
 
-            await _productService.UpdateProductAsync(id, product, userId);
-            return Ok(ApiResponse<bool>.SuccessResponse(true));
+            try
+            {
+                await _productService.UpdateProductAsync(id, product, userId);
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Product updated successfully"));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<string>.ErrorResponse(ex.Message, 403));
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (ConflictException ex)
+            {
+                return Conflict(ApiResponse<string>.ErrorResponse(ex.Message, 409));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error", 500));
+            }
         }
-
         /// <summary>
         /// Deletes a product.
         /// </summary>
@@ -271,8 +482,28 @@ namespace Bikya.API.Areas.Products.Controller
                 return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
 
             var rootPath = _env.WebRootPath;
-            await _productService.DeleteProductAsync(id, userId, rootPath);
-            return Ok(ApiResponse<bool>.SuccessResponse(true));
+
+            try
+            {
+                await _productService.DeleteProductAsync(id, userId, rootPath);
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Product deleted successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<string>.ErrorResponse(ex.Message, 403));
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error", 500));
+            }
         }
 
         #endregion
@@ -297,17 +528,40 @@ namespace Bikya.API.Areas.Products.Controller
 
             var rootPath = _env.WebRootPath;
 
-            if (dto.Image != null)
+            try
             {
-                await _productImageService.AddProductImageAsync(new ProductImageDTO
+                if (dto.Image != null)
                 {
-                    ProductId = productId,
-                    Image = dto.Image,
-                    IsMain = dto.IsMain
-                }, userId, rootPath);
-            }
+                    await _productImageService.AddProductImageAsync(new ProductImageDTO
+                    {
+                        ProductId = productId,
+                        Image = dto.Image,
+                        IsMain = dto.IsMain
+                    }, userId, rootPath);
+                }
 
-            return Ok(ApiResponse<bool>.SuccessResponse(true));
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Image uploaded successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<string>.ErrorResponse(ex.Message, 403));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (IOException ex)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse($"Image upload failed: {ex.Message}", 500));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error", 500));
+            }
         }
 
         /// <summary>
@@ -338,8 +592,27 @@ namespace Bikya.API.Areas.Products.Controller
             if (!TryGetUserId(out int userId))
                 return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
 
-            await _productImageService.SetMainImageAsync(id, userId);
-            return Ok(ApiResponse<bool>.SuccessResponse(true, "Main image updated successfully"));
+            try
+            {
+                await _productImageService.SetMainImageAsync(id, userId);
+                return Ok(ApiResponse<bool>.SuccessResponse(true, "Main image updated successfully"));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403, ApiResponse<string>.ErrorResponse(ex.Message, 403));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error", 500));
+            }
         }
 
         /// <summary>
@@ -355,9 +628,30 @@ namespace Bikya.API.Areas.Products.Controller
                     return Unauthorized(ApiResponse<string>.ErrorResponse("Unauthorized", 401));
 
                 var rootPath = _env.WebRootPath;
+             
+            try
+            {
                 await _productImageService.DeleteProductImageAsync(id, userId, rootPath);
                 return Ok(ApiResponse<bool>.SuccessResponse(true));
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(403,ApiResponse<string>.ErrorResponse(ex.Message, 403));
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Expected business logic error like main image delete
+                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse<string>.ErrorResponse("Internal server error", 500));
+            }
+        }
 
             #endregion
         }

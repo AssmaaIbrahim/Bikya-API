@@ -48,16 +48,16 @@ namespace Bikya.Services.Services
                     Condition = p.Condition,
                     CategoryId = p.CategoryId,
                     CreatedAt= p.CreatedAt,
-                    CategoryName =p.Category.Name,
+                    CategoryName =p.Category.Name ?? "Unknown",
                     IsApproved = p.IsApproved,
                     UserId = p.UserId,
-                    UserName=p.User.FullName,
+                    UserName=p.User.FullName ?? "Unknown",
                     Status=p.Status,
                     Images = p.Images.Select(i => new GetProductImageDTO
                     { Id = i.Id,
                         ImageUrl = i.ImageUrl,
-                        IsMain = i.IsMain }).ToList()
-                    
+                        IsMain = i.IsMain }).ToList() ?? new List<GetProductImageDTO>()
+
                 });
                 return dto;
             }
@@ -83,17 +83,17 @@ namespace Bikya.Services.Services
                     Condition = p.Condition,
                     CreatedAt = p.CreatedAt,
                     CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name,
+                    CategoryName = p.Category.Name ?? "Unknown",
                     IsApproved = p.IsApproved,
                     Status = p.Status,
                     UserId = p.UserId,
-                    UserName = p.User.FullName,
+                    UserName = p.User.FullName ?? "Unknown",
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
                         Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
-                    }).ToList()
+                    }).ToList() ?? new List<GetProductImageDTO>()
 
                 });
                 return dto;
@@ -119,18 +119,18 @@ namespace Bikya.Services.Services
                     IsForExchange = p.IsForExchange,
                     Condition = p.Condition,
                     CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name,
+                    CategoryName = p.Category.Name ?? "Unknown",
                     IsApproved = p.IsApproved,
                     CreatedAt = p.CreatedAt,
                     Status = p.Status,
                     UserId = p.UserId,
-                    UserName = p.User.FullName,
+                    UserName = p.User.FullName ?? "Unknown",
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
                         Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
-                    }).ToList()
+                    }).ToList() ?? new List<GetProductImageDTO>()
 
                 });
                 return dto;
@@ -161,17 +161,17 @@ namespace Bikya.Services.Services
                     Condition = product.Condition,
                     CreatedAt= product.CreatedAt,
                     CategoryId = product.CategoryId,
-                    CategoryName = product.Category.Name,
+                    CategoryName = product.Category.Name ?? "Unknown",
                     IsApproved = product.IsApproved,
                     Status = product.Status,
                     UserId = product.UserId,
-                    UserName = product.User.FullName,
+                    UserName = product.User.FullName ?? "Unknown",
                     Images = product.Images.Select(i => new GetProductImageDTO
                     {
                         Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
-                    }).ToList()
+                    }).ToList() ?? new List<GetProductImageDTO>()
 
                 };
                 return dto;
@@ -202,18 +202,18 @@ namespace Bikya.Services.Services
                     IsForExchange = p.IsForExchange,
                     Condition = p.Condition,
                     CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name,
+                    CategoryName = p.Category.Name ?? "Unknown",
                     IsApproved = p.IsApproved,
                     CreatedAt = p.CreatedAt,
                     Status = p.Status,
-                    UserId = p.UserId,
-                    UserName = p.User.FullName,
+                    UserId = p.UserId ,
+                    UserName = p.User.FullName ?? "Unknown",
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
                         Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
-                    }).ToList()
+                    }).ToList() ?? new List<GetProductImageDTO>()
 
                 });
                 return dto;
@@ -244,18 +244,18 @@ namespace Bikya.Services.Services
                     IsForExchange = p.IsForExchange,
                     Condition = p.Condition,
                     CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name,
+                    CategoryName = p.Category.Name ?? "Unknown",
                     IsApproved = p.IsApproved,
                     Status = p.Status,
                     CreatedAt = p.CreatedAt,
                     UserId = p.UserId,
-                    UserName = p.User.FullName,
+                    UserName = p.User.FullName ?? "Unknown",
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
                         Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
-                    }).ToList()
+                    }).ToList() ?? new List<GetProductImageDTO>()
 
                 });
                 return dto;
@@ -286,18 +286,18 @@ namespace Bikya.Services.Services
                     IsForExchange = p.IsForExchange,
                     Condition = p.Condition,
                     CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name,
+                    CategoryName = p.Category.Name ?? "Unknown",
                     IsApproved = p.IsApproved,
                     Status = p.Status,
                     CreatedAt = p.CreatedAt,
                     UserId = p.UserId,
-                    UserName = p.User.FullName,
+                    UserName = p.User.FullName ?? "Unknown",
                     Images = p.Images.Select(i => new GetProductImageDTO
                     {
                         Id = i.Id,
                         ImageUrl = i.ImageUrl,
                         IsMain = i.IsMain
-                    }).ToList()
+                    }).ToList() ?? new List<GetProductImageDTO>()
 
                 });
                 return dto;
