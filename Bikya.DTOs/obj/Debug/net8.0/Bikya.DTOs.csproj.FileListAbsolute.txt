@@ -1,0 +1,16 @@
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\bin\Debug\net8.0\Bikya.DTOs.deps.json
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\bin\Debug\net8.0\Bikya.DTOs.dll
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\bin\Debug\net8.0\Bikya.DTOs.pdb
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\bin\Debug\net8.0\Bikya.Data.dll
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\bin\Debug\net8.0\Bikya.Data.pdb
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.csproj.AssemblyReference.cache
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.AssemblyInfoInputs.cache
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.AssemblyInfo.cs
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.csproj.CoreCompileInputs.cache
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.sourcelink.json
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.csproj.Up2Date
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.dll
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\refint\Bikya.DTOs.dll
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\Bikya.DTOs.pdb
+C:\Users\Dell\OneDrive\Desktop\ITI\New\Bikya-API\Bikya.DTOs\obj\Debug\net8.0\ref\Bikya.DTOs.dll

@@ -19,7 +19,7 @@ namespace Bikya.DTOs.UserDTOs
         [Url(ErrorMessage = "Invalid profile image URL.")]
         public string? ProfileImageUrl { get; set; }
 
-        [Phone(ErrorMessage = "Invalid phone number format.")]
+        [RegularExpression(@"^\d{11}$", ErrorMessage = "رقم الهاتف يجب أن يحتوي على 11 رقمًا")]
         public string? PhoneNumber { get; set; }
     }
 }
