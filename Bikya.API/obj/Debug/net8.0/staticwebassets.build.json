@@ -1,0 +1,12 @@
+{
+  "Version": 1,
+  "Hash": "CDTT5kel3jsYRfzjCzyDBMfpQjpW0Kj430inoZxPyzs=",
+  "Source": "Bikya.API",
+  "BasePath": "_content/Bikya.API",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": [],
+  "Endpoints": []
+}
