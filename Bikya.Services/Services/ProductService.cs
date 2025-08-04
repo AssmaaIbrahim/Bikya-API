@@ -1,10 +1,13 @@
-﻿using Bikya.Data.Repositories.Interfaces;
+﻿using Bikya.Data.Migrations;
 using Bikya.Data.Models;
+using Bikya.Data.Repositories.Interfaces;
 using Bikya.DTOs.ProductDTO;
 using Bikya.Services.Exceptions;
 using Bikya.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Collections.Generic;
 
 namespace Bikya.Services.Services
 {
@@ -16,11 +19,13 @@ namespace Bikya.Services.Services
         private readonly IProductRepository _productRepository;
         private readonly IProductImageRepository _productImageRepository;
         private readonly ProductImageService _productImageService;
+        private readonly IWishlistRepository _wishlistRepository;
 
         public ProductService(
             IProductRepository productRepository,
             IProductImageRepository productImageRepository,
             ProductImageService productImageService,
+            IWishlistRepository wishlistRepository,
             ILogger<ProductService> logger,
             UserManager<ApplicationUser> userManager) 
             : base(logger, userManager)
@@ -28,38 +33,20 @@ namespace Bikya.Services.Services
             _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
             _productImageRepository = productImageRepository ?? throw new ArgumentNullException(nameof(productImageRepository));
             _productImageService = productImageService ?? throw new ArgumentNullException(nameof(productImageService));
+            _wishlistRepository = wishlistRepository ?? throw new ArgumentNullException(nameof(wishlistRepository));
         }
 
         #region GET Methods
 
-        public async Task<IEnumerable<GetProductDTO>> GetApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<GetProductDTO>> GetApprovedProductsWithImagesAsync(int? userId = null, CancellationToken cancellationToken = default)
         {
             try
             {
                 var products= await _productRepository.GetApprovedProductsWithImagesAsync(cancellationToken);
 
-                var dto = products.Select(p => new GetProductDTO
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Description = p.Description,
-                    Price = p.Price,
-                    IsForExchange = p.IsForExchange,
-                    Condition = p.Condition,
-                    CategoryId = p.CategoryId,
-                    CreatedAt= p.CreatedAt,
-                    CategoryName =p.Category.Name ?? "Unknown",
-                    IsApproved = p.IsApproved,
-                    UserId = p.UserId,
-                    UserName=p.User.FullName ?? "Unknown",
-                    Status=p.Status,
-                    Images = p.Images.Select(i => new GetProductImageDTO
-                    { Id = i.Id,
-                        ImageUrl = i.ImageUrl,
-                        IsMain = i.IsMain }).ToList() ?? new List<GetProductImageDTO>()
+               
 
-                });
-                return dto;
+                return await MapProductsWithWishlistAsync(products,userId,cancellationToken);
             }
             catch (Exception ex)
             {
@@ -68,35 +55,12 @@ namespace Bikya.Services.Services
             }
         }
 
-        public async Task<IEnumerable<GetProductDTO>> GetNotApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<GetProductDTO>> GetNotApprovedProductsWithImagesAsync(int? userId = null, CancellationToken cancellationToken = default)
         {
             try
             {
                 var products= await _productRepository.GetNotApprovedProductsWithImagesAsync(cancellationToken);
-                var dto = products.Select(p => new GetProductDTO
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Description = p.Description,
-                    Price = p.Price,
-                    IsForExchange = p.IsForExchange,
-                    Condition = p.Condition,
-                    CreatedAt = p.CreatedAt,
-                    CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name ?? "Unknown",
-                    IsApproved = p.IsApproved,
-                    Status = p.Status,
-                    UserId = p.UserId,
-                    UserName = p.User.FullName ?? "Unknown",
-                    Images = p.Images.Select(i => new GetProductImageDTO
-                    {
-                        Id = i.Id,
-                        ImageUrl = i.ImageUrl,
-                        IsMain = i.IsMain
-                    }).ToList() ?? new List<GetProductImageDTO>()
-
-                });
-                return dto;
+                return await MapProductsWithWishlistAsync(products, userId, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -105,35 +69,12 @@ namespace Bikya.Services.Services
             }
         }
 
-        public async Task<IEnumerable<GetProductDTO>> GetAllProductsWithImagesAsync(CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<GetProductDTO>> GetAllProductsWithImagesAsync(int? userId = null, CancellationToken cancellationToken = default)
         {
             try
             {
                 var products= await _productRepository.GetProductsWithImagesAsync(cancellationToken);
-                var dto = products.Select(p => new GetProductDTO
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Description = p.Description,
-                    Price = p.Price,
-                    IsForExchange = p.IsForExchange,
-                    Condition = p.Condition,
-                    CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name ?? "Unknown",
-                    IsApproved = p.IsApproved,
-                    CreatedAt = p.CreatedAt,
-                    Status = p.Status,
-                    UserId = p.UserId,
-                    UserName = p.User.FullName ?? "Unknown",
-                    Images = p.Images.Select(i => new GetProductImageDTO
-                    {
-                        Id = i.Id,
-                        ImageUrl = i.ImageUrl,
-                        IsMain = i.IsMain
-                    }).ToList() ?? new List<GetProductImageDTO>()
-
-                });
-                return dto;
+                return await MapProductsWithWishlistAsync(products, userId, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -142,7 +83,7 @@ namespace Bikya.Services.Services
             }
         }
 
-        public async Task<GetProductDTO> GetProductWithImagesByIdAsync(int productId, CancellationToken cancellationToken = default)
+        public async Task<GetProductDTO> GetProductWithImagesByIdAsync(int productId, int? userId = null, CancellationToken cancellationToken = default)
         {
             try
             {
@@ -150,31 +91,18 @@ namespace Bikya.Services.Services
 
                 var product = await _productRepository.GetProductWithImagesByIdAsync(productId, cancellationToken);
                 ValidateEntityNotNull(product, "Product", productId);
+                HashSet<int>? wishlistProductIds = null;
 
-                var dto = new GetProductDTO
+                if (userId.HasValue)
                 {
-                    Id = product.Id,
-                    Title = product.Title,
-                    Description = product.Description,
-                    Price = product.Price,
-                    IsForExchange = product.IsForExchange,
-                    Condition = product.Condition,
-                    CreatedAt= product.CreatedAt,
-                    CategoryId = product.CategoryId,
-                    CategoryName = product.Category.Name ?? "Unknown",
-                    IsApproved = product.IsApproved,
-                    Status = product.Status,
-                    UserId = product.UserId,
-                    UserName = product.User.FullName ?? "Unknown",
-                    Images = product.Images.Select(i => new GetProductImageDTO
-                    {
-                        Id = i.Id,
-                        ImageUrl = i.ImageUrl,
-                        IsMain = i.IsMain
-                    }).ToList() ?? new List<GetProductImageDTO>()
+                    wishlistProductIds = await _wishlistRepository
+                        .GetProductIdsByUserIdAsync(userId.Value, cancellationToken);
+                }
 
-                };
-                return dto;
+                return product.ToGetProductDTO(wishlistProductIds);
+
+
+               
             }
             catch (BusinessException)
             {
@@ -193,30 +121,7 @@ namespace Bikya.Services.Services
             {
                 await ValidateUserExistsAsync(userId, cancellationToken);
                 var products= await _productRepository.GetProductsByUserAsync(userId, cancellationToken);
-                var dto = products.Select(p => new GetProductDTO
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Description = p.Description,
-                    Price = p.Price,
-                    IsForExchange = p.IsForExchange,
-                    Condition = p.Condition,
-                    CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name ?? "Unknown",
-                    IsApproved = p.IsApproved,
-                    CreatedAt = p.CreatedAt,
-                    Status = p.Status,
-                    UserId = p.UserId ,
-                    UserName = p.User.FullName ?? "Unknown",
-                    Images = p.Images.Select(i => new GetProductImageDTO
-                    {
-                        Id = i.Id,
-                        ImageUrl = i.ImageUrl,
-                        IsMain = i.IsMain
-                    }).ToList() ?? new List<GetProductImageDTO>()
-
-                });
-                return dto;
+                return await MapProductsWithWishlistAsync(products, userId, cancellationToken);
             }
             catch (BusinessException)
             {
@@ -235,30 +140,8 @@ namespace Bikya.Services.Services
             {
                 await ValidateUserExistsAsync(userId, cancellationToken);
                 var products= await _productRepository.GetApprovedProductsByUserAsync(userId, cancellationToken);
-                var dto = products.Select(p => new GetProductDTO
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Description = p.Description,
-                    Price = p.Price,
-                    IsForExchange = p.IsForExchange,
-                    Condition = p.Condition,
-                    CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name ?? "Unknown",
-                    IsApproved = p.IsApproved,
-                    Status = p.Status,
-                    CreatedAt = p.CreatedAt,
-                    UserId = p.UserId,
-                    UserName = p.User.FullName ?? "Unknown",
-                    Images = p.Images.Select(i => new GetProductImageDTO
-                    {
-                        Id = i.Id,
-                        ImageUrl = i.ImageUrl,
-                        IsMain = i.IsMain
-                    }).ToList() ?? new List<GetProductImageDTO>()
 
-                });
-                return dto;
+                return await MapProductsWithWishlistAsync(products, userId, cancellationToken);
             }
             catch (BusinessException)
             {
@@ -271,36 +154,13 @@ namespace Bikya.Services.Services
             }
         }
 
-        public async Task<IEnumerable<GetProductDTO>> GetProductsByCategoryAsync(int categoryId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<GetProductDTO>> GetProductsByCategoryAsync(int categoryId, int? userId = null, CancellationToken cancellationToken = default)
         {
             try
             {
                 ValidatePositiveId(categoryId, "Category ID");
                 var products= await _productRepository.GetProductsByCategoryAsync(categoryId, cancellationToken);
-                var dto = products.Select(p => new GetProductDTO
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Description = p.Description,
-                    Price = p.Price,
-                    IsForExchange = p.IsForExchange,
-                    Condition = p.Condition,
-                    CategoryId = p.CategoryId,
-                    CategoryName = p.Category.Name ?? "Unknown",
-                    IsApproved = p.IsApproved,
-                    Status = p.Status,
-                    CreatedAt = p.CreatedAt,
-                    UserId = p.UserId,
-                    UserName = p.User.FullName ?? "Unknown",
-                    Images = p.Images.Select(i => new GetProductImageDTO
-                    {
-                        Id = i.Id,
-                        ImageUrl = i.ImageUrl,
-                        IsMain = i.IsMain
-                    }).ToList() ?? new List<GetProductImageDTO>()
-
-                });
-                return dto;
+                return await MapProductsWithWishlistAsync(products, userId, cancellationToken);
             }
             catch (BusinessException)
             {
@@ -516,6 +376,19 @@ namespace Bikya.Services.Services
             ValidatePositiveId(productDTO.CategoryId, "Category ID");
         }
 
+
+        private async Task<IEnumerable<GetProductDTO>> MapProductsWithWishlistAsync( IEnumerable<Product> products, int? userId, CancellationToken cancellationToken)
+        {
+            
+
+            if (userId.HasValue)
+            {
+                var wishlist = await _wishlistRepository.GetProductIdsByUserIdAsync(userId.Value, cancellationToken);
+                return products.Select(p => p.ToGetProductDTO(wishlist));
+            }
+            return products.Select(p => p.ToGetProductDTO());
+
+        }
         #endregion
     }
 }

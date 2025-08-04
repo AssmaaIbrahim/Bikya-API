@@ -23,7 +23,7 @@ namespace Bikya.Data
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<ExchangeRequest> ExchangeRequests { get; set; }
         public DbSet<Payment> Payments { get; set; }
-
+        public DbSet<WishList> WishLists { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new UserConfiguration());
@@ -37,6 +37,7 @@ namespace Bikya.Data
             modelBuilder.ApplyConfiguration(new TransactionConfiguration());
             modelBuilder.ApplyConfiguration(new ExchangeRequestConfiguration());
             modelBuilder.ApplyConfiguration(new PaymentConfiguration());
+            modelBuilder.ApplyConfiguration(new WishlistConfiguration());
 
 
             base.OnModelCreating(modelBuilder);

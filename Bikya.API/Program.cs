@@ -53,6 +53,7 @@ namespace Bikya
             builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             builder.Services.AddScoped<IShippingServiceRepository, ShippingServiceRepository>();
+            builder.Services.AddScoped<IWishlistRepository, WishlistRepository>();
 
             // Register Business Services
             builder.Services.AddScoped<IPaymentService, PaymentService>();
@@ -63,6 +64,7 @@ namespace Bikya
             builder.Services.AddScoped<IShippingService, ShippingService>();
             builder.Services.AddScoped<Bikya.Services.Services.ProductService, Bikya.Services.Services.ProductService>();
             builder.Services.AddScoped<ProductImageService, ProductImageService>();
+            builder.Services.AddScoped<WishistService, WishistService>();
 
             builder.Services.AddHttpContextAccessor();
             builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));

@@ -38,26 +38,26 @@ namespace Bikya.API.Areas.Products.Controller
             return int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out userId);
         }
 
-        protected async Task<IActionResult> HandleRequest(Func<Task> action, string successMessage)
-        {
-            try
-            {
-                await action();
-                return Ok(ApiResponse<bool>.SuccessResponse(true, successMessage));
-            }
-            catch (ValidationException ex)
-            {
-                return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
-            }
-            catch (ArgumentException ex)
-            {
-                return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, ApiResponse<string>.ErrorResponse("Server error", 500));
-            }
-        }
+        //protected async Task<IActionResult> HandleRequest(Func<Task> action, string successMessage)
+        //{
+        //    try
+        //    {
+        //        await action();
+        //        return Ok(ApiResponse<bool>.SuccessResponse(true, successMessage));
+        //    }
+        //    catch (ValidationException ex)
+        //    {
+        //        return BadRequest(ApiResponse<string>.ErrorResponse(ex.Message, 400));
+        //    }
+        //    catch (ArgumentException ex)
+        //    {
+        //        return NotFound(ApiResponse<string>.ErrorResponse(ex.Message, 404));
+        //    }
+        //    catch (Exception)
+        //    {
+        //        return StatusCode(500, ApiResponse<string>.ErrorResponse("Server error", 500));
+        //    }
+        //}
 
         #endregion
 
@@ -73,7 +73,9 @@ namespace Bikya.API.Areas.Products.Controller
         {
             try
             {
-                var products = await _productService.GetAllProductsWithImagesAsync();
+                var userId = TryGetUserId(out var uid) ? uid : (int?)null;
+
+                var products = await _productService.GetAllProductsWithImagesAsync(userId);
                 return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
             }
             catch (UnauthorizedAccessException ex)
@@ -195,7 +197,8 @@ namespace Bikya.API.Areas.Products.Controller
         {
             try
             {
-                var products = await _productService.GetApprovedProductsWithImagesAsync();
+                var userId = TryGetUserId(out var uid) ? uid : (int?)null;
+                var products = await _productService.GetApprovedProductsWithImagesAsync(userId);
                 return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
             }
             catch (Exception ex)
@@ -215,7 +218,8 @@ namespace Bikya.API.Areas.Products.Controller
         {
             try
             {
-                var product = await _productService.GetProductWithImagesByIdAsync(id);
+                var userId = TryGetUserId(out var uid) ? uid : (int?)null;
+                var product = await _productService.GetProductWithImagesByIdAsync(id,userId);
                 return Ok(ApiResponse<GetProductDTO>.SuccessResponse(product));
             }
             catch (ValidationException ex)
@@ -299,7 +303,8 @@ namespace Bikya.API.Areas.Products.Controller
         {
             try
             {
-                var products = await _productService.GetProductsByCategoryAsync(id);
+                var userId = TryGetUserId(out var uid) ? uid : (int?)null;
+                var products = await _productService.GetProductsByCategoryAsync(id,userId);
                 return Ok(ApiResponse<IEnumerable<GetProductDTO>>.SuccessResponse(products));
             }
             catch (ValidationException ex)

@@ -40,6 +40,8 @@ namespace Bikya.Data.Models
         [System.Text.Json.Serialization.JsonIgnore]
         public Category Category { get; set; }
 
+        public ICollection<WishList> Wishlists { get; set; }
+
     }
 
 

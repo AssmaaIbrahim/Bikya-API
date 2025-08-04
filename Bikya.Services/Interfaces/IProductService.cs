@@ -27,22 +27,22 @@ namespace Bikya.Services.Interfaces
         /// <summary>
         /// Gets all approved products with images.
         /// </summary>
-        Task<IEnumerable<GetProductDTO>> GetApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetApprovedProductsWithImagesAsync(int? userId = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all not approved products with images.
         /// </summary>
-        Task<IEnumerable<GetProductDTO>> GetNotApprovedProductsWithImagesAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetNotApprovedProductsWithImagesAsync(int? userId = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all products with images.
         /// </summary>
-        Task<IEnumerable<GetProductDTO>> GetAllProductsWithImagesAsync(CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetAllProductsWithImagesAsync(int? userId = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets a product by ID with images.
         /// </summary>
-        Task<GetProductDTO> GetProductWithImagesByIdAsync(int productId, CancellationToken cancellationToken = default);
+        Task<GetProductDTO> GetProductWithImagesByIdAsync(int productId, int? userId = null, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Gets all products for a specific user.
@@ -57,7 +57,7 @@ namespace Bikya.Services.Interfaces
         /// <summary>
         /// Gets all products for a specific category.
         /// </summary>
-        Task<IEnumerable<GetProductDTO>> GetProductsByCategoryAsync(int categoryId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetProductsByCategoryAsync(int categoryId, int? userId = null, CancellationToken cancellationToken = default);
 
         #endregion
 
