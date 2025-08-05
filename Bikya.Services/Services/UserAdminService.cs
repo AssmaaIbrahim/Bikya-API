@@ -34,7 +34,8 @@ namespace Bikya.Services.Services
                 Id = u.Id,
                 Email = u.Email,
                 FullName = u.FullName,
-                UserName = u.UserName
+                UserName = u.UserName,
+                CreatedAt = u is { } ? (u.GetType().GetProperty("CreatedAt") != null ? (DateTime)u.GetType().GetProperty("CreatedAt").GetValue(u) : DateTime.MinValue) : DateTime.MinValue
             }).ToList();
 
             return ApiResponse<List<UserProfileDto>>.SuccessResponse(userDtos);

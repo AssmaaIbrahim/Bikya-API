@@ -4,24 +4,17 @@ namespace Bikya.Data.Repositories.Interfaces
 {
     public interface ICategoryRepository : IGenericRepository<Category>
     {
-        Task<(IEnumerable<Category> categories, int totalCount)> GetPaginatedAsync(
-            int page,
-            int pageSize,
-            string? search = null,
-            CancellationToken cancellationToken = default);
-
-        Task<Category?> GetByIdWithProductsAsync(int id, CancellationToken cancellationToken = default);
-
-        Task<Category?> GetByNameAsync(string name, CancellationToken cancellationToken = default);
-
-        Task<Category?> GetByNameWithProductsAsync(string name, CancellationToken cancellationToken = default);
-
-        Task<bool> ExistsByNameAsync(string name, CancellationToken cancellationToken = default);
-
-        Task<bool> ExistsByNameExcludingIdAsync(string name, int excludeId, CancellationToken cancellationToken = default);
-
-        Task<IEnumerable<Category>> GetOrderedByCreatedDateAsync(CancellationToken cancellationToken = default);
+        Task<(List<Category> Categories, int TotalCount)> GetPaginatedAsync(int page, int pageSize, string? search);
         Task<List<Category>> GetAllAsync(string? search = null);
+        Task<Category?> GetByIdAsync(int id);
+        Task<Category?> GetByIdWithProductsAsync(int id);
+        Task<Category?> GetByNameWithProductsAsync(string name);
+        Task<bool> ExistsByNameAsync(string name);
+        Task<bool> ExistsByNameExcludingIdAsync(string name, int excludeId);
+        Task AddAsync(Category category);
         Task AddRangeAsync(List<Category> categories);
+        void Update(Category category);
+        void Remove(Category category);
+        Task SaveChangesAsync();
     }
 }

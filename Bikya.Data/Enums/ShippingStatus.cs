@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Bikya.Data.Models
+namespace Bikya.Data.Enums
 {
     public enum ShippingStatus
     {

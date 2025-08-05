@@ -284,7 +284,9 @@ namespace Bikya.Data.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
@@ -292,19 +294,22 @@ namespace Bikya.Data.Migrations
                     b.Property<int>("Gateway")
                         .HasColumnType("int");
 
-                    b.Property<string>("GatewayReference")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int?>("OrderId")
                         .HasColumnType("int");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<string>("StripeSessionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
 
                     b.ToTable("Payments");
                 });
@@ -527,49 +532,11 @@ namespace Bikya.Data.Migrations
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
-                    b.Property<int>("WalletId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("PaymentId");
 
-                    b.HasIndex("WalletId");
-
                     b.ToTable("Transactions");
-                });
-
-            modelBuilder.Entity("Bikya.Data.Models.Wallet", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Balance")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(18,2)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsLocked")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LinkedPaymentMethod")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("Wallets");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -730,6 +697,15 @@ namespace Bikya.Data.Migrations
                     b.Navigation("Seller");
                 });
 
+            modelBuilder.Entity("Bikya.Data.Models.Payment", b =>
+                {
+                    b.HasOne("Bikya.Data.Models.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId");
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("Bikya.Data.Models.Product", b =>
                 {
                     b.HasOne("Bikya.Data.Models.Category", "Category")
@@ -799,30 +775,11 @@ namespace Bikya.Data.Migrations
             modelBuilder.Entity("Bikya.Data.Models.Transaction", b =>
                 {
                     b.HasOne("Bikya.Data.Models.Payment", "Payment")
-                        .WithMany()
-                        .HasForeignKey("PaymentId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Bikya.Data.Models.Wallet", "Wallet")
                         .WithMany("Transactions")
-                        .HasForeignKey("WalletId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.Navigation("Payment");
-
-                    b.Navigation("Wallet");
-                });
-
-            modelBuilder.Entity("Bikya.Data.Models.Wallet", b =>
-                {
-                    b.HasOne("Bikya.Data.Models.ApplicationUser", "User")
-                        .WithOne("Wallet")
-                        .HasForeignKey("Bikya.Data.Models.Wallet", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -887,8 +844,6 @@ namespace Bikya.Data.Migrations
                     b.Navigation("ReviewsReceived");
 
                     b.Navigation("ReviewsWritten");
-
-                    b.Navigation("Wallet");
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Category", b =>
@@ -906,14 +861,14 @@ namespace Bikya.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Bikya.Data.Models.Payment", b =>
+                {
+                    b.Navigation("Transactions");
+                });
+
             modelBuilder.Entity("Bikya.Data.Models.Product", b =>
                 {
                     b.Navigation("Images");
-                });
-
-            modelBuilder.Entity("Bikya.Data.Models.Wallet", b =>
-                {
-                    b.Navigation("Transactions");
                 });
 #pragma warning restore 612, 618
         }

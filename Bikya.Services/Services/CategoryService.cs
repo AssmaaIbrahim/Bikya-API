@@ -40,7 +40,6 @@ namespace Bikya.Services.Services
             return ApiResponse<PaginatedCategoryResponse>.SuccessResponse(response, "Categories retrieved with pagination");
         }
 
-        // ✅ Without pagination
         public async Task<ApiResponse<List<CategoryDTO>>> GetAllAsync(string? search = null)
         {
             var categories = await _categoryRepository.GetAllAsync(search);
@@ -48,8 +47,6 @@ namespace Bikya.Services.Services
 
             return ApiResponse<List<CategoryDTO>>.SuccessResponse(result, "Categories retrieved successfully");
         }
-
-
 
         public async Task<ApiResponse<CategoryDTO>> GetByIdAsync(int id)
         {
@@ -70,6 +67,7 @@ namespace Bikya.Services.Services
 
             return ApiResponse<CategoryDTO>.SuccessResponse(ToCategoryDTO(category), "Category retrieved successfully");
         }
+
         public async Task<ApiResponse<int>> CreateBulkAsync(List<CreateCategoryDTO> dtos)
         {
             if (dtos == null || !dtos.Any())
@@ -93,7 +91,6 @@ namespace Bikya.Services.Services
 
         public async Task<ApiResponse<CategoryDTO>> AddAsync(CreateCategoryDTO dto)
         {
-            // Check if a category with the same name already exists
             var nameExists = await _categoryRepository.ExistsByNameAsync(dto.Name);
 
             if (nameExists)
@@ -114,7 +111,6 @@ namespace Bikya.Services.Services
             if (category == null)
                 return ApiResponse<CategoryDTO>.ErrorResponse("Category not found", 404);
 
-            // Check for duplicate name in other categories
             var existsWithSameName = await _categoryRepository.ExistsByNameExcludingIdAsync(dto.Name, id);
 
             if (existsWithSameName)
@@ -123,6 +119,7 @@ namespace Bikya.Services.Services
             category.Name = dto.Name;
             category.Description = dto.Description;
             category.IconUrl = dto.IconUrl;
+            category.ParentCategoryId = dto.ParentCategoryId;
 
             _categoryRepository.Update(category);
             await _categoryRepository.SaveChangesAsync();
@@ -151,6 +148,7 @@ namespace Bikya.Services.Services
                 IconUrl = category.IconUrl,
                 Description = category.Description,
                 CreatedAt = category.CreatedAt,
+                ParentName = category.ParentCategory?.Name // ✅ نعرض اسم الكاتيجوري الأب
             };
         }
 
@@ -161,7 +159,9 @@ namespace Bikya.Services.Services
                 Name = dto.Name,
                 IconUrl = dto.IconUrl,
                 Description = dto.Description,
+                ParentCategoryId = dto.ParentCategoryId // ✅ مهم جدًا
             };
         }
     }
+
 }
