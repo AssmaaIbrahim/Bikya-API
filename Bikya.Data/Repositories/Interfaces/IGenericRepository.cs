@@ -70,6 +70,14 @@ namespace Bikya.Data.Repositories.Interfaces
         void Update(T entity);
 
         /// <summary>
+        /// Updates an entity and saves changes to the database.
+        /// </summary>
+        /// <param name="entity">The entity to update</param>
+        /// <param name="cancellationToken">Cancellation token</param>
+        /// <returns>The updated entity</returns>
+        Task<T> UpdateAsync(T entity, CancellationToken cancellationToken = default);
+
+        /// <summary>
         /// Marks multiple entities as modified.
         /// </summary>
         /// <param name="entities">The entities to update</param>

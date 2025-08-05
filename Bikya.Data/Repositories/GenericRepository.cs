@@ -128,6 +128,22 @@ namespace Bikya.Data.Repositories
             }
         }
 
+        public virtual async Task<T> UpdateAsync(T entity, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                _dbSet.Attach(entity);
+                _context.Entry(entity).State = EntityState.Modified;
+                await _context.SaveChangesAsync(cancellationToken);
+                return entity;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating entity of type {EntityType}", typeof(T).Name);
+                throw;
+            }
+        }
+
         public virtual void UpdateRange(IEnumerable<T> entities)
         {
             try

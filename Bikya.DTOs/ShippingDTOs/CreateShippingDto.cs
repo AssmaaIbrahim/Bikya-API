@@ -1,3 +1,4 @@
+using Bikya.Data.Enums;
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

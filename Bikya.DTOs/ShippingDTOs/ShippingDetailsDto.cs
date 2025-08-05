@@ -1,4 +1,6 @@
-﻿using Bikya.Data.Models;
+using Bikya.Data.Enums;
+﻿using Bikya.Data.Enums;
+using Bikya.Data.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;

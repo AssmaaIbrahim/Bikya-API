@@ -19,5 +19,6 @@ namespace Bikya.DTOs.AuthDTOs
         public double? SellerRating { get; set; } 
 
         public List<string>? Roles { get; set; }
+        public DateTime CreatedAt { get; set; }
     }
 }

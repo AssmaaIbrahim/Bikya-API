@@ -44,7 +44,7 @@ namespace Bikya.API.Areas.Category
 
 
         [HttpPost("bulk")]
-        //[Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateBulk([FromBody] BulkCreateCategoryDTO request)
         {
             var response = await _service.CreateBulkAsync(request.Categories);

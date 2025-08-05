@@ -15,6 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Bikya
 {
@@ -29,7 +30,11 @@ namespace Bikya
             Stripe.StripeConfiguration.ApiKey = stripeSecretKey;
 
             // Add services to the container.
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+                });
 
             #region Bikya Context
             builder.Services.AddDbContext<BikyaContext>(options =>
@@ -64,6 +69,7 @@ namespace Bikya
             builder.Services.AddScoped<IShippingService, ShippingService>();
             builder.Services.AddScoped<Bikya.Services.Services.ProductService, Bikya.Services.Services.ProductService>();
             builder.Services.AddScoped<ProductImageService, ProductImageService>();
+            builder.Services.AddScoped<IDeliveryService, DeliveryService>();
             builder.Services.AddScoped<WishistService, WishistService>();
 
             builder.Services.AddHttpContextAccessor();
@@ -138,6 +144,9 @@ namespace Bikya
                 options.AddPolicy("RequireUserRole", policy =>
                     policy.RequireRole("User", "Admin"));
 
+                options.AddPolicy("RequireDeliveryRole", policy =>
+                    policy.RequireRole("Delivery"));
+
                 options.AddPolicy("RequireVerifiedUser", policy =>
                     policy.RequireAssertion(context =>
                         context.User.HasClaim(c => c.Type == "IsVerified" && c.Value == "true") ||
@@ -156,11 +165,25 @@ namespace Bikya
                             "http://localhost:4202",
                             "http://localhost:4203",
                             "http://localhost:4204",
-                            "http://localhost:4205"
+                            "http://localhost:4205",
+                            "https://localhost:4200",
+                            "https://localhost:4201",
+                            "https://localhost:4202",
+                            "https://localhost:4203",
+                            "https://localhost:4204",
+                            "https://localhost:4205"
                           )
                           .AllowAnyHeader()
                           .AllowAnyMethod()
                           .AllowCredentials();
+                });
+                
+                // Add a more permissive policy for development
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
                 });
             });
 
@@ -211,10 +234,10 @@ namespace Bikya
             app.UseMiddleware<GlobalExceptionHandler>();
 
             // Seed roles
-            //using (var scope = app.Services.CreateScope())
-            //{
-            //    SeedRoles(scope.ServiceProvider).Wait();
-            //}
+            using (var scope = app.Services.CreateScope())
+            {
+                SeedRoles(scope.ServiceProvider).Wait();
+            }
 
             if (app.Environment.IsDevelopment())
             {
@@ -224,7 +247,17 @@ namespace Bikya
 
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseCors("AllowSpecificOrigin");
+            
+            // Use CORS based on environment
+            if (app.Environment.IsDevelopment())
+            {
+                app.UseCors("AllowAll");
+            }
+            else
+            {
+                app.UseCors("AllowSpecificOrigin");
+            }
+            
             app.UseStaticFiles();
 
             // Map controllers with areas support
@@ -242,7 +275,7 @@ namespace Bikya
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
 
-            string[] roleNames = { "Admin", "User" };
+            string[] roleNames = { "Admin", "User", "Delivery" };
 
             foreach (var roleName in roleNames)
             {
