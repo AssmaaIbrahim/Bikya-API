@@ -21,5 +21,9 @@ namespace Bikya.DTOs.ExchangeRequestDTOs
         public string Status { get; set; } 
 
         public DateTime RequestedAt { get; set; }
+
+        // Newly added: order references created upon approval
+        public int? OrderForOfferedProductId { get; set; }
+        public int? OrderForRequestedProductId { get; set; }
     }
 }

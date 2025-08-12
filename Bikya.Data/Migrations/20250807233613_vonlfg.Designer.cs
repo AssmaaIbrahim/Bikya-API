@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bikya.Data.Migrations
 {
     [DbContext(typeof(BikyaContext))]
-    [Migration("20250730225714_wishlist")]
-    partial class wishlist
+    [Migration("20250807233613_vonlfg")]
+    partial class vonlfg
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -194,11 +194,23 @@ namespace Bikya.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Message")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<int>("OfferedProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OrderForOfferedProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OrderForRequestedProductId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("RequestedAt")
@@ -209,19 +221,68 @@ namespace Bikya.Data.Migrations
                     b.Property<int>("RequestedProductId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("RespondedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
                         .HasColumnType("nvarchar(max)")
                         .HasDefaultValue("Pending");
 
+                    b.Property<string>("StatusMessage")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OfferedProductId");
 
+                    b.HasIndex("OrderForOfferedProductId")
+                        .IsUnique()
+                        .HasFilter("[OrderForOfferedProductId] IS NOT NULL");
+
+                    b.HasIndex("OrderForRequestedProductId")
+                        .IsUnique()
+                        .HasFilter("[OrderForRequestedProductId] IS NOT NULL");
+
                     b.HasIndex("RequestedProductId");
 
                     b.ToTable("ExchangeRequests");
+                });
+
+            modelBuilder.Entity("Bikya.Data.Models.ExchangeStatusHistory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("ChangedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<string>("ChangedByUserId")
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("ExchangeRequestId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Message")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExchangeRequestId");
+
+                    b.ToTable("ExchangeStatusHistories");
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Order", b =>
@@ -242,6 +303,11 @@ namespace Bikya.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2")
                         .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<bool>("IsSwapOrder")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<DateTime?>("PaidAt")
                         .HasColumnType("datetime2");
@@ -489,6 +555,12 @@ namespace Bikya.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("ShippingFee")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("ShippingMethod")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -690,6 +762,16 @@ namespace Bikya.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Bikya.Data.Models.Order", "OrderForOfferedProduct")
+                        .WithOne()
+                        .HasForeignKey("Bikya.Data.Models.ExchangeRequest", "OrderForOfferedProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Bikya.Data.Models.Order", "OrderForRequestedProduct")
+                        .WithOne()
+                        .HasForeignKey("Bikya.Data.Models.ExchangeRequest", "OrderForRequestedProductId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Bikya.Data.Models.Product", "RequestedProduct")
                         .WithMany()
                         .HasForeignKey("RequestedProductId")
@@ -698,7 +780,22 @@ namespace Bikya.Data.Migrations
 
                     b.Navigation("OfferedProduct");
 
+                    b.Navigation("OrderForOfferedProduct");
+
+                    b.Navigation("OrderForRequestedProduct");
+
                     b.Navigation("RequestedProduct");
+                });
+
+            modelBuilder.Entity("Bikya.Data.Models.ExchangeStatusHistory", b =>
+                {
+                    b.HasOne("Bikya.Data.Models.ExchangeRequest", "ExchangeRequest")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("ExchangeRequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExchangeRequest");
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Order", b =>
@@ -901,6 +998,11 @@ namespace Bikya.Data.Migrations
                     b.Navigation("Products");
 
                     b.Navigation("SubCategories");
+                });
+
+            modelBuilder.Entity("Bikya.Data.Models.ExchangeRequest", b =>
+                {
+                    b.Navigation("StatusHistory");
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Order", b =>

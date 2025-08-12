@@ -30,5 +30,12 @@ namespace Bikya.Data.Repositories.Interfaces
         Task<decimal> GetSellerRevenueAsync(int sellerId, CancellationToken cancellationToken = default);
 
         Task<int> GetOrdersCountByStatusAsync(OrderStatus status, CancellationToken cancellationToken = default);
+
+        Task<Order?> GetByProductAndBuyerAsync(int productId, int buyerId, CancellationToken cancellationToken = default);
+        
+        /// <summary>
+        /// Gets all orders for a specific product
+        /// </summary>
+        Task<List<Order>> GetOrdersByProductIdAsync(int productId, CancellationToken cancellationToken = default);
     }
 }

@@ -23,7 +23,7 @@ namespace Bikya.Data.Configurations
 
             builder.Property(x => x.PhoneNumber)
                 .IsRequired()
-                .HasMaxLength(12);
+                .HasMaxLength(20);
 
             builder.Property(x => x.Address)
                 .IsRequired()
@@ -45,6 +45,8 @@ namespace Bikya.Data.Configurations
             builder.Property(x =>x.CreateAt)
        .HasDefaultValueSql("GETUTCDATE()");
 
+            builder.Property(x => x.ShippingFee)
+                .HasColumnType("decimal(18,2)");
 
             builder.HasOne(x=>x.Order)
                 .WithOne(x=> x.ShippingInfo)

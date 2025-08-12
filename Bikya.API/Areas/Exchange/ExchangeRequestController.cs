@@ -25,13 +25,30 @@ namespace Bikya.API.Areas.Exchange
         /// <summary>
         /// Gets the current user ID from claims.
         /// </summary>
-        /// <returns>User ID</returns>
+        /// <returns>User ID or 0 if invalid</returns>
         private int GetUserId()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (string.IsNullOrEmpty(userIdStr) || !int.TryParse(userIdStr, out int userId))
-                throw new UnauthorizedAccessException("Invalid user token");
-            return userId;
+            // Try multiple possible claim types
+            var claimTypes = new[]
+            {
+                ClaimTypes.NameIdentifier,
+                "nameid",
+                "sub",
+                "uid",
+                "userId",
+                "sid"
+            };
+
+            foreach (var type in claimTypes)
+            {
+                var value = User.FindFirstValue(type);
+                if (!string.IsNullOrWhiteSpace(value) && int.TryParse(value, out var userIdFromClaim))
+                {
+                    return userIdFromClaim;
+                }
+            }
+
+            return 0; // Invalid
         }
 
         /// <summary>
@@ -82,7 +99,13 @@ namespace Bikya.API.Areas.Exchange
         [HttpGet("sent")]
         public async Task<IActionResult> GetSent()
         {
-            var response = await _service.GetSentRequestsAsync(GetUserId());
+            var userId = GetUserId();
+            if (userId <= 0)
+            {
+                return Unauthorized(new { message = "Invalid user token" });
+            }
+
+            var response = await _service.GetSentRequestsAsync(userId);
             return StatusCode(response.StatusCode, response);
         }
 
@@ -93,7 +116,13 @@ namespace Bikya.API.Areas.Exchange
         [HttpGet("received")]
         public async Task<IActionResult> GetReceived()
         {
-            var response = await _service.GetReceivedRequestsAsync(GetUserId());
+            var userId = GetUserId();
+            if (userId <= 0)
+            {
+                return Unauthorized(new { message = "Invalid user token" });
+            }
+
+            var response = await _service.GetReceivedRequestsAsync(userId);
             return StatusCode(response.StatusCode, response);
         }
 

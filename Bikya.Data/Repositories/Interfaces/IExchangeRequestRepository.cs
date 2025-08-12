@@ -1,4 +1,4 @@
-﻿using Bikya.Data.Enums;
+using Bikya.Data.Enums;
 using Bikya.Data.Models;
 
 namespace Bikya.Data.Repositories.Interfaces
@@ -6,6 +6,8 @@ namespace Bikya.Data.Repositories.Interfaces
     public interface IExchangeRequestRepository : IGenericRepository<ExchangeRequest>
     {
         Task<ExchangeRequest?> GetByIdWithProductsAsync(int id, CancellationToken cancellationToken = default);
+
+        Task<ExchangeRequest?> GetByIdWithProductsAndUsersAsync(int id, CancellationToken cancellationToken = default);
 
         Task<List<ExchangeRequest>> GetAllWithProductsAsync(CancellationToken cancellationToken = default);
 

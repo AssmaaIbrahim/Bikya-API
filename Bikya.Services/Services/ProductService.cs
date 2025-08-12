@@ -1,4 +1,4 @@
-﻿using Bikya.Data.Migrations;
+﻿//using Bikya.Data.Migrations;
 using Bikya.Data.Models;
 using Bikya.Data.Repositories.Interfaces;
 using Bikya.DTOs.ProductDTO;

@@ -9,11 +9,16 @@ namespace Bikya.DTOs.ShippingDTOs
 {
     public class ShippingInfoDTO
     {
-        public string RecipientName { get; set; }
-        public string Address { get; set; }
-        public string City { get; set; }
-        public string PostalCode { get; set; }
-        public string PhoneNumber { get; set; }
+        // Make fields nullable to avoid [ApiController] automatic 400 for missing values,
+        // we validate/upsert safely in the service layer.
+        public string? RecipientName { get; set; }
+        public string? Address { get; set; }
+        public string? City { get; set; }
+        public string? PostalCode { get; set; }
+        public string? PhoneNumber { get; set; }
+        public decimal ShippingFee { get; set; } = 50.0m;
+        public string Status { get; set; } = "Pending";
+        public object? TrackingNumber { get; set; }
     }
 
 }

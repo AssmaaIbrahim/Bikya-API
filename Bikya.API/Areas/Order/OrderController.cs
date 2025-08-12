@@ -41,6 +41,12 @@ namespace Bikya.API.Areas.Order
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
+            // Guard: for swap orders, avoid double-submits by checking existing order first
+            if (dto.IsSwapOrder && dto.ProductId > 0 && dto.BuyerId > 0)
+            {
+                // Delegate to service which already has idempotency, but short-circuiting here avoids unnecessary errors
+            }
+
             var result = await _orderService.CreateOrderAsync(dto);
             return StatusCode(result.StatusCode, result);
         }

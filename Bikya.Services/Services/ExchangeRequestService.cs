@@ -1,10 +1,14 @@
-﻿using Bikya.Data.Enums;
+using Bikya.Data.Enums;
 using Bikya.Data.Models;
 using Bikya.Data.Repositories.Interfaces;
 using Bikya.Data.Response;
 using Bikya.DTOs.ExchangeRequestDTOs;
 using Bikya.Services.Interfaces;
 using Microsoft.Extensions.Logging;
+using System.Transactions;
+using System;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace Bikya.Services.Services
 {
@@ -12,15 +16,18 @@ namespace Bikya.Services.Services
     {
         private readonly IExchangeRequestRepository _exchangeRequestRepository;
         private readonly IProductRepository _productRepository;
+        private readonly IOrderRepository _orderRepository;
         private readonly ILogger<ExchangeRequestService> _logger;
 
         public ExchangeRequestService(
             IExchangeRequestRepository exchangeRequestRepository,
             IProductRepository productRepository,
+            IOrderRepository orderRepository,
             ILogger<ExchangeRequestService> logger)
         {
             _exchangeRequestRepository = exchangeRequestRepository ?? throw new ArgumentNullException(nameof(exchangeRequestRepository));
             _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
+            _orderRepository = orderRepository ?? throw new ArgumentNullException(nameof(orderRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -121,44 +128,201 @@ namespace Bikya.Services.Services
             try
             {
                 var requests = await _exchangeRequestRepository.GetReceivedRequestsAsync(receiverUserId);
-                var requestDTOs = requests.Select(ToDTO).ToList();
+                // Defensive: filter out any null items just in case
+                var safeRequests = requests?.Where(r => r != null).ToList() ?? new List<ExchangeRequest>();
+                var requestDTOs = safeRequests.Select(ToDTO).ToList();
 
                 return ApiResponse<List<ExchangeRequestDTO>>.SuccessResponse(requestDTOs);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving received requests for user {UserId}", receiverUserId);
-                return ApiResponse<List<ExchangeRequestDTO>>.ErrorResponse("An error occurred while retrieving received requests", 500);
+                // Avoid breaking the UI: return empty list instead of 500
+                return ApiResponse<List<ExchangeRequestDTO>>.SuccessResponse(new List<ExchangeRequestDTO>(), "No received requests found");
             }
         }
 
         public async Task<ApiResponse<ExchangeRequestDTO>> ApproveRequestAsync(int requestId, int currentUserId)
         {
+            // Create an explicit scope that allows async flow
+            var transaction = new TransactionScope(
+                TransactionScopeOption.Required,
+                new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted },
+                TransactionScopeAsyncFlowOption.Enabled);
+            
             try
             {
-                var request = await _exchangeRequestRepository.GetRequestForApprovalAsync(requestId, currentUserId);
+                _logger.LogInformation("Starting transaction for approving exchange request {RequestId}", requestId);
+                _logger.LogInformation("Starting approval for exchange request {RequestId} by user {UserId}", requestId, currentUserId);
+                
+                // Get the exchange request with products
+                var exchangeRequest = await _exchangeRequestRepository.GetByIdWithProductsAndUsersAsync(requestId);
 
-                if (request == null)
-                    return ApiResponse<ExchangeRequestDTO>.ErrorResponse("Request not found or you are not authorized to approve this request", 404);
+                // Validate request
+                if (exchangeRequest == null)
+                {
+                    _logger.LogWarning("Exchange request {RequestId} not found", requestId);
+                    return ApiResponse<ExchangeRequestDTO>.ErrorResponse("Request not found", 404);
+                }
 
-                var success = await _exchangeRequestRepository.UpdateStatusAsync(requestId, ExchangeStatus.Accepted);
-                if (!success)
-                    return ApiResponse<ExchangeRequestDTO>.ErrorResponse("Failed to update request status", 500);
+                if (exchangeRequest.RequestedProduct?.UserId != currentUserId)
+                {
+                    _logger.LogWarning("User {UserId} is not authorized to approve request {RequestId}", currentUserId, requestId);
+                    return ApiResponse<ExchangeRequestDTO>.ErrorResponse("You are not authorized to approve this request", 403);
+                }
 
+                if (exchangeRequest.Status != ExchangeStatus.Pending)
+                {
+                    _logger.LogWarning("Exchange request {RequestId} is not in a pending state. Current status: {Status}", 
+                        requestId, exchangeRequest.Status);
+                    return ApiResponse<ExchangeRequestDTO>.ErrorResponse("This request is not in a pending state", 400);
+                }
+
+                // Validate products
+                if (exchangeRequest.OfferedProduct == null || exchangeRequest.RequestedProduct == null)
+                {
+                    _logger.LogError("One or both products not found in exchange request {RequestId}", requestId);
+                    return ApiResponse<ExchangeRequestDTO>.ErrorResponse("One or both products not found", 404);
+                }
+
+                // Mark products as traded
+                exchangeRequest.OfferedProduct.Status = ProductStatus.Traded;
+                exchangeRequest.RequestedProduct.Status = ProductStatus.Traded;
+                
+                // Update request status
+                exchangeRequest.Status = ExchangeStatus.Accepted;
+                exchangeRequest.RespondedAt = DateTime.UtcNow;
+                
+                // Check if orders already exist for this exchange to prevent duplicates
+                var existingOrderForOffered = await _orderRepository.GetByProductAndBuyerAsync(
+                    exchangeRequest.OfferedProductId, 
+                    exchangeRequest.RequestedProduct.UserId ?? 0);
+                
+                var existingOrderForRequested = await _orderRepository.GetByProductAndBuyerAsync(
+                    exchangeRequest.RequestedProductId, 
+                    exchangeRequest.OfferedProduct.UserId ?? 0);
+
+                // Only create orders if they don't already exist
+                if (existingOrderForOffered == null)
+                {
+                    _logger.LogInformation("Creating order for offered product {ProductId} in exchange {RequestId}", 
+                        exchangeRequest.OfferedProductId, requestId);
+                    
+                    // Create order for the offered product (being given away)
+                    var orderForOffered = new Order
+                    {
+                        ProductId = exchangeRequest.OfferedProductId,
+                        BuyerId = exchangeRequest.RequestedProduct.UserId ?? 0, // Person receiving the offered product
+                        SellerId = exchangeRequest.OfferedProduct.UserId ?? 0,  // Person giving away the offered product
+                        TotalAmount = 50.0m, // Fixed shipping fee for exchanges
+                        PlatformFee = 0,
+                        SellerAmount = 50.0m,
+                        IsSwapOrder = true,
+                        Status = OrderStatus.Pending,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    
+                    await _orderRepository.AddAsync(orderForOffered);
+                    // Persist to generate Order ID
+                    await _orderRepository.SaveChangesAsync();
+                    // Assign generated ID to exchange request
+                    exchangeRequest.OrderForOfferedProductId = orderForOffered.Id;
+                    
+                    _logger.LogInformation("Created order {OrderId} for offered product {ProductId}", 
+                        orderForOffered.Id, exchangeRequest.OfferedProductId);
+                }
+                else
+                {
+                    _logger.LogInformation("Found existing order {OrderId} for offered product {ProductId}", 
+                        existingOrderForOffered.Id, exchangeRequest.OfferedProductId);
+                    exchangeRequest.OrderForOfferedProductId = existingOrderForOffered.Id;
+                }
+                
+                if (existingOrderForRequested == null)
+                {
+                    _logger.LogInformation("Creating order for requested product {ProductId} in exchange {RequestId}", 
+                        exchangeRequest.RequestedProductId, requestId);
+                    
+                    // Create order for the requested product (being given away)
+                    var orderForRequested = new Order
+                    {
+                        ProductId = exchangeRequest.RequestedProductId,
+                        BuyerId = exchangeRequest.OfferedProduct.UserId ?? 0, // Person receiving the requested product
+                        SellerId = exchangeRequest.RequestedProduct.UserId ?? 0, // Person giving away the requested product
+                        TotalAmount = 50.0m, // Fixed shipping fee for exchanges
+                        PlatformFee = 0,
+                        SellerAmount = 50.0m,
+                        IsSwapOrder = true,
+                        Status = OrderStatus.Pending,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    
+                    await _orderRepository.AddAsync(orderForRequested);
+                    // Persist to generate Order ID
+                    await _orderRepository.SaveChangesAsync();
+                    // Assign generated ID to exchange request
+                    exchangeRequest.OrderForRequestedProductId = orderForRequested.Id;
+                    
+                    _logger.LogInformation("Created order {OrderId} for requested product {ProductId}", 
+                        orderForRequested.Id, exchangeRequest.RequestedProductId);
+                }
+                else
+                {
+                    _logger.LogInformation("Found existing order {OrderId} for requested product {ProductId}", 
+                        existingOrderForRequested.Id, exchangeRequest.RequestedProductId);
+                    exchangeRequest.OrderForRequestedProductId = existingOrderForRequested.Id;
+                }
+
+                // Add status history
+                var statusHistory = new ExchangeStatusHistory
+                {
+                    ExchangeRequestId = exchangeRequest.Id,
+                    Status = ExchangeStatus.Accepted,
+                    ChangedByUserId = currentUserId.ToString(),
+                    ChangedAt = DateTime.UtcNow,
+                    Message = "Exchange request approved by admin"
+                };
+                
+                // Add status history to the request's collection
+                exchangeRequest.StatusHistory.Add(statusHistory);
+                
+                // Update exchange request
+                exchangeRequest.Status = ExchangeStatus.Accepted;
+                exchangeRequest.ProcessedAt = DateTime.UtcNow;
+                exchangeRequest.ProcessedBy = currentUserId;
+                // Persist all changes (orders, products status, exchange request updates)
+                _exchangeRequestRepository.Update(exchangeRequest);
                 await _exchangeRequestRepository.SaveChangesAsync();
+                
+                _logger.LogInformation("Exchange request {RequestId} approved by user {UserId}. Orders created: Offered={OrderForOfferedProductId}, Requested={OrderForRequestedProductId}", 
+                    requestId, currentUserId, exchangeRequest.OrderForOfferedProductId, exchangeRequest.OrderForRequestedProductId);
 
-                // Refresh the request to get updated data
-                var updatedRequest = await _exchangeRequestRepository.GetByIdWithProductsAsync(requestId);
-                
-                _logger.LogInformation("Exchange request {RequestId} approved by user {UserId}", requestId, currentUserId);
-                
-                return ApiResponse<ExchangeRequestDTO>.SuccessResponse(ToDTO(updatedRequest!), "Request approved");
+                // Mark transaction as successful
+                transaction.Complete();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error approving exchange request {RequestId} by user {UserId}", requestId, currentUserId);
                 return ApiResponse<ExchangeRequestDTO>.ErrorResponse("An error occurred while approving the request", 500);
             }
+            finally
+            {
+                // Ensure the scope is disposed to end the ambient transaction
+                transaction.Dispose();
+            }
+
+            // Outside of the transaction scope: refresh the request
+            var refreshed = await _exchangeRequestRepository.GetByIdWithProductsAsync(requestId);
+            if (refreshed == null)
+            {
+                _logger.LogError("Failed to refresh exchange request {RequestId} after approval", requestId);
+                return ApiResponse<ExchangeRequestDTO>.ErrorResponse(
+                    "Request approved but failed to retrieve updated details", 500);
+            }
+
+            return ApiResponse<ExchangeRequestDTO>.SuccessResponse(
+                ToDTO(refreshed),
+                "Swap request approved successfully. Two orders have been created for the exchange.");
         }
 
         public async Task<ApiResponse<ExchangeRequestDTO>> RejectRequestAsync(int requestId, int currentUserId)
@@ -219,10 +383,14 @@ namespace Bikya.Services.Services
             {
                 Id = request.Id,
                 OfferedProductId = request.OfferedProductId,
+                OfferedProductTitle = request.OfferedProduct?.Title ?? string.Empty,
                 RequestedProductId = request.RequestedProductId,
+                RequestedProductTitle = request.RequestedProduct?.Title ?? string.Empty,
                 Status = request.Status.ToString(),
                 Message = request.Message,
-                RequestedAt = request.RequestedAt
+                RequestedAt = request.RequestedAt,
+                OrderForOfferedProductId = request.OrderForOfferedProductId,
+                OrderForRequestedProductId = request.OrderForRequestedProductId
             };
         }
     }

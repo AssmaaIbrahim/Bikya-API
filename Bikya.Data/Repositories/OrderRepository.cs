@@ -121,6 +121,7 @@ namespace Bikya.Data.Repositories
                     .Include(o => o.Product)
                     .Include(o => o.Buyer)
                     .Include(o => o.Seller)
+                    .Include(o => o.ShippingInfo)
                     .OrderByDescending(o => o.CreatedAt)
                     .ToListAsync(cancellationToken);
             }
@@ -254,6 +255,42 @@ namespace Bikya.Data.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error counting orders by status {Status}", status);
+                throw;
+            }
+        }
+
+        public async Task<Order?> GetByProductAndBuyerAsync(int productId, int buyerId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.Orders
+                    .AsNoTracking()
+                    .Include(o => o.ShippingInfo)
+                    .FirstOrDefaultAsync(o => o.ProductId == productId && o.BuyerId == buyerId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving order for product {ProductId} and buyer {BuyerId}", productId, buyerId);
+                throw;
+            }
+        }
+
+        public async Task<List<Order>> GetOrdersByProductIdAsync(int productId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.Orders
+                    .AsNoTracking()
+                    .Include(o => o.Product)
+                    .Include(o => o.Buyer)
+                    .Include(o => o.Seller)
+                    .Where(o => o.ProductId == productId)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving orders for product {ProductId}", productId);
                 throw;
             }
         }

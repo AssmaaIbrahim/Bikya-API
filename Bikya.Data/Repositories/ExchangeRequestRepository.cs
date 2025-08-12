@@ -1,4 +1,4 @@
-﻿using Bikya.Data.Enums;
+using Bikya.Data.Enums;
 using Bikya.Data.Models;
 using Bikya.Data.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +33,25 @@ namespace Bikya.Data.Repositories
             }
         }
 
+        public async Task<ExchangeRequest?> GetByIdWithProductsAndUsersAsync(int id, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.ExchangeRequests
+                    .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.User)
+                    .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.User)
+                    .Include(e => e.StatusHistory)
+                    .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving exchange request with ID {RequestId}, products, and users", id);
+                throw;
+            }
+        }
+
         public async Task<List<ExchangeRequest>> GetAllWithProductsAsync(CancellationToken cancellationToken = default)
         {
             try
@@ -59,7 +78,7 @@ namespace Bikya.Data.Repositories
                     .AsNoTracking()
                     .Include(e => e.OfferedProduct)
                     .Include(e => e.RequestedProduct)
-                    .Where(e => e.OfferedProduct.UserId == senderUserId)
+                    .Where(e => e.OfferedProduct != null && e.OfferedProduct.UserId.HasValue && e.OfferedProduct.UserId.Value == senderUserId)
                     .OrderByDescending(e => e.RequestedAt)
                     .ToListAsync(cancellationToken);
             }
@@ -78,7 +97,7 @@ namespace Bikya.Data.Repositories
                     .AsNoTracking()
                     .Include(e => e.OfferedProduct)
                     .Include(e => e.RequestedProduct)
-                    .Where(e => e.RequestedProduct.UserId == receiverUserId)
+                    .Where(e => e.RequestedProduct != null && e.RequestedProduct.UserId.HasValue && e.RequestedProduct.UserId.Value == receiverUserId)
                     .OrderByDescending(e => e.RequestedAt)
                     .ToListAsync(cancellationToken);
             }

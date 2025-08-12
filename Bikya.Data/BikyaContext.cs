@@ -1,4 +1,4 @@
-﻿using Bikya.Data.Configurations;
+using Bikya.Data.Configurations;
 using Bikya.Data.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -22,6 +22,7 @@ namespace Bikya.Data
        // public DbSet<Wallet> Wallets { get; set; }
         public DbSet<Transaction> Transactions { get; set; }
         public DbSet<ExchangeRequest> ExchangeRequests { get; set; }
+        public DbSet<ExchangeStatusHistory> ExchangeStatusHistories { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<WishList> WishLists { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -36,6 +37,7 @@ namespace Bikya.Data
            // modelBuilder.ApplyConfiguration(new WalletConfiguration());
             modelBuilder.ApplyConfiguration(new TransactionConfiguration());
             modelBuilder.ApplyConfiguration(new ExchangeRequestConfiguration());
+            modelBuilder.ApplyConfiguration(new ExchangeStatusHistoryConfiguration());
             modelBuilder.ApplyConfiguration(new PaymentConfiguration());
             modelBuilder.ApplyConfiguration(new WishlistConfiguration());
 

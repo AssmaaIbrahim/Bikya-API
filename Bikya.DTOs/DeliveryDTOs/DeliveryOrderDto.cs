@@ -24,6 +24,11 @@ namespace Bikya.DTOs.DeliveryDTOs
         public string BuyerName { get; set; }
         public string BuyerEmail { get; set; }
         public string BuyerPhone { get; set; }
+        
+        // Exchange Order Linking
+        public bool IsSwapOrder { get; set; }
+        public int? RelatedOrderId { get; set; }
+        public string ExchangeInfo { get; set; } = "";
     }
 }
 

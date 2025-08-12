@@ -1,4 +1,4 @@
-﻿using Bikya.Data.Models;
+using Bikya.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -32,6 +32,10 @@ namespace Bikya.Data.Configurations
             builder.Property(o => o.Status)
                    .IsRequired();
 
+            builder.Property(o => o.IsSwapOrder)
+                   .HasDefaultValue(false)
+                   .IsRequired();
+
             builder.Property(o => o.CreatedAt)
                    .HasDefaultValueSql("GETUTCDATE()");
 
@@ -58,7 +62,11 @@ namespace Bikya.Data.Configurations
                 .HasForeignKey(o => o.SellerId)
                 .OnDelete(DeleteBehavior.NoAction); // Prevent multiple cascade paths
 
-
+            // Idempotency: ensure one active order per (ProductId, BuyerId)
+            // This reduces duplicate swap orders on concurrent calls
+            builder.HasIndex(o => new { o.ProductId, o.BuyerId })
+                   .HasDatabaseName("UX_Orders_Product_Buyer")
+                   .IsUnique();
         }
     }
 }

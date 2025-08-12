@@ -1,4 +1,4 @@
-﻿using Bikya.Data.Enums;
+using Bikya.Data.Enums;
 using Bikya.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -16,15 +16,42 @@ namespace Bikya.Data.Configurations
         {
             builder.HasKey(e => e.Id);
 
+            // Status and timestamps
             builder.Property(e => e.Status)
-                   .HasConversion<string>() // يخزن كـ نص (أفضل للقراءة)
+                   .HasConversion<string>()
                    .HasDefaultValue(ExchangeStatus.Pending);
-
+                   
+            builder.Property(e => e.StatusMessage)
+                   .HasMaxLength(500);
+                   
             builder.Property(e => e.RequestedAt)
                    .HasDefaultValueSql("GETUTCDATE()");
+                   
+            builder.Property(e => e.RespondedAt)
+                   .IsRequired(false);
+                   
+            builder.Property(e => e.CompletedAt)
+                   .IsRequired(false);
+                   
+            builder.Property(e => e.ExpiresAt)
+                   .IsRequired(false);
 
             builder.Property(e => e.Message)
-                   .HasMaxLength(1000);
+                   .HasMaxLength(500);
+
+            builder.Property(e => e.ProcessedAt)
+                   .IsRequired(false);
+
+            builder.Property(e => e.ProcessedBy)
+                   .IsRequired(false);
+
+            builder.Property(e => e.UserId)
+                   .IsRequired(false);
+
+            builder.HasOne<ApplicationUser>(e => e.User)
+                   .WithMany()
+                   .HasForeignKey(e => e.UserId)
+                   .OnDelete(DeleteBehavior.SetNull);
 
             builder.HasOne(e => e.OfferedProduct)
                    .WithMany() // لا تربطه بمجموعة Requests معينة داخل Product
@@ -35,6 +62,19 @@ namespace Bikya.Data.Configurations
                    .WithMany()
                    .HasForeignKey(e => e.RequestedProductId)
                    .OnDelete(DeleteBehavior.Restrict);
+                   
+            // Order relationships
+            builder.HasOne(e => e.OrderForOfferedProduct)
+                   .WithOne()
+                   .HasForeignKey<ExchangeRequest>(e => e.OrderForOfferedProductId)
+                   .OnDelete(DeleteBehavior.Restrict)
+                   .IsRequired(false);
+                   
+            builder.HasOne(e => e.OrderForRequestedProduct)
+                   .WithOne()
+                   .HasForeignKey<ExchangeRequest>(e => e.OrderForRequestedProductId)
+                   .OnDelete(DeleteBehavior.Restrict)
+                   .IsRequired(false);
         }
     }
 }

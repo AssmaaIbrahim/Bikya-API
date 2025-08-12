@@ -1,4 +1,4 @@
-﻿using Bikya.Data.Enums;
+using Bikya.Data.Enums;
 
 namespace Bikya.Data.Models
 {
@@ -26,6 +26,7 @@ namespace Bikya.Data.Models
 
         // Status Info
         public OrderStatus Status { get; set; } = OrderStatus.Pending;
+        public bool IsSwapOrder { get; set; } = false;
 
         public DateTime CreatedAt { get; set; }
         public DateTime? PaidAt { get; set; }

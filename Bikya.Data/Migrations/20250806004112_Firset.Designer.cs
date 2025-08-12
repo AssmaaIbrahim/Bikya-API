@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bikya.Data.Migrations
 {
     [DbContext(typeof(BikyaContext))]
-    [Migration("20250801013626_dfknosfgosf")]
-    partial class dfknosfgosf
+    [Migration("20250806004112_Firset")]
+    partial class Firset
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -542,6 +542,34 @@ namespace Bikya.Data.Migrations
                     b.ToTable("Transactions");
                 });
 
+            modelBuilder.Entity("Bikya.Data.Models.WishList", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WishLists");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
                     b.Property<int>("Id")
@@ -785,6 +813,25 @@ namespace Bikya.Data.Migrations
                     b.Navigation("Payment");
                 });
 
+            modelBuilder.Entity("Bikya.Data.Models.WishList", b =>
+                {
+                    b.HasOne("Bikya.Data.Models.Product", "Product")
+                        .WithMany("Wishlists")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Bikya.Data.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
                     b.HasOne("Bikya.Data.Models.ApplicationRole", null)
@@ -872,6 +919,8 @@ namespace Bikya.Data.Migrations
             modelBuilder.Entity("Bikya.Data.Models.Product", b =>
                 {
                     b.Navigation("Images");
+
+                    b.Navigation("Wishlists");
                 });
 #pragma warning restore 612, 618
         }

@@ -15,5 +15,7 @@ namespace Bikya.Data.Models
         public DateTime CreateAt { get; set; }
         public int OrderId { get; set; }
         public  Order? Order { get; set; } // Required navigation property
+        public decimal ShippingFee { get; set; }
+        public string? ShippingMethod { get; set; }
     }
 }
