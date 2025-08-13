@@ -183,6 +183,51 @@ namespace Bikya.Data.Migrations
                     b.ToTable("Categories");
                 });
 
+            modelBuilder.Entity("Bikya.Data.Models.ChatBotFaq", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Answer")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Keyword")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ChatBotFaqs");
+                });
+
+            modelBuilder.Entity("Bikya.Data.Models.ChatMessage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BotReply")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserMessage")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ChatMessages");
+                });
+
             modelBuilder.Entity("Bikya.Data.Models.ExchangeRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -342,9 +387,11 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("BuyerId");
 
-                    b.HasIndex("ProductId");
-
                     b.HasIndex("SellerId");
+
+                    b.HasIndex("ProductId", "BuyerId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Orders_Product_Buyer");
 
                     b.ToTable("Orders");
                 });

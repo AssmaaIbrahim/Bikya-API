@@ -2,8 +2,12 @@
 using Bikya.Data.Repositories.Interfaces;
 using Bikya.Data.Response;
 using Bikya.DTOs.AuthDTOs;
+using Bikya.DTOs.ProductDTO;
+using Bikya.DTOs.ReviewDTOs;
 using Bikya.DTOs.UserDTOs;
 using Bikya.Services.Interfaces;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -15,16 +19,29 @@ namespace Bikya.Services.Services
 {
     public class UserService : IUserService
     {
-        private readonly IUserRepository _userRepository;
 
+        private readonly IWebHostEnvironment _env;
         // تعريف ثوابت لرسائل الأخطاء
         private const string UserNotFoundMessage = "User not found.";
         private const string PasswordChangeFailedMessage = "Incorrect password or invalid new password.";
         private const string ProfileUpdateFailedMessage = "Failed to update profile.";
 
-        public UserService(IUserRepository userRepository)
+        private readonly IUserRepository _userRepository;
+        private readonly IReviewRepository _reviewRepository;
+        private readonly IProductRepository _productRepository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
+        public UserService(
+        IUserRepository userRepository,
+        IReviewRepository reviewRepository,
+        IProductRepository productRepository,
+        IWebHostEnvironment env,
+        IHttpContextAccessor httpContextAccessor)
         {
             _userRepository = userRepository;
+            _reviewRepository = reviewRepository;
+            _productRepository = productRepository;
+            _env = env;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -74,6 +91,22 @@ namespace Bikya.Services.Services
             return ApiResponse<bool>.SuccessResponse(true, "Account deactivated successfully.");
         }
 
+        public async Task<ApiResponse<bool>> ReactivateAccountAsync(string email)
+        {
+            var user = await _userRepository.FindByEmailAsync(email);
+            if (user == null)
+                return ApiResponse<bool>.ErrorResponse("User not found", 404);
+
+            if (!user.IsDeleted)
+                return ApiResponse<bool>.ErrorResponse("Account is already active", 400);
+
+            user.IsDeleted = false;
+            await _userRepository.UpdateUserAsync(user);
+            return ApiResponse<bool>.SuccessResponse(true, "Account reactivated successfully.");
+        }
+
+
+
         /// <summary>
         /// Gets a user profile by user ID.
         /// </summary>
@@ -117,7 +150,7 @@ namespace Bikya.Services.Services
             user.FullName = dto.FullName ?? user.FullName;
             user.ProfileImageUrl = dto.ProfileImageUrl ?? user.ProfileImageUrl;
             user.Address = dto.Address ?? user.Address;
-            user.PhoneNumber =dto.PhoneNumber ?? user.PhoneNumber;
+            user.PhoneNumber = dto.PhoneNumber ?? user.PhoneNumber;
 
             var result = await _userRepository.UpdateUserAsync(user);
             if (!result.Succeeded)
@@ -129,21 +162,142 @@ namespace Bikya.Services.Services
             return ApiResponse<bool>.SuccessResponse(true, "Profile updated successfully.");
         }
 
-        public async Task<ApiResponse<bool>> UpdateProfileImageAsync(int userId, string imageUrl)
+        public async Task<ApiResponse<UserStatsDTO>> GetUserStatsAsync(int userId)
         {
-            var user = await _userRepository.FindByIdAsync(userId);
-            if (user == null)
-                return ApiResponse<bool>.ErrorResponse("User not found.", 404);
+            var productCount = await _userRepository.CountUserProductsAsync(userId);
+            var orderCount = await _userRepository.CountUserOrdersAsync(userId);
+            var averageRating = await _userRepository.GetAverageRatingForSellerAsync(userId);
+            var totalSales = await _userRepository.CountUserSalesAsync(userId);
 
-            user.ProfileImageUrl = imageUrl;
-            var result = await _userRepository.UpdateUserAsync(user);
-            if (!result.Succeeded)
+            if (productCount == 0 && orderCount == 0 && totalSales == 0 && averageRating == 0)
+                return ApiResponse<UserStatsDTO>.ErrorResponse("No stats available for this user.", 404);
+
+            var dto = new UserStatsDTO
             {
-                var errors = result.Errors.Select(e => e.Description).ToList();
-                return ApiResponse<bool>.ErrorResponse("Failed to update profile image.", 400, errors);
+                TotalProducts = productCount,
+                TotalOrders = orderCount,
+                TotalSales = totalSales,
+                AvrageReating = averageRating
+            };
+
+            return ApiResponse<UserStatsDTO>.SuccessResponse(dto, "User stats retrieved successfully.");
+        }
+
+        public async Task<ApiResponse<bool>> IsVipSellerAsync(int sellerId)
+        {
+            var avgRating = await _userRepository.GetAverageRatingForSellerAsync(sellerId);
+
+            if (avgRating == 5.0)
+                return ApiResponse<bool>.SuccessResponse(true, "Seller is VIP.");
+
+            return ApiResponse<bool>.SuccessResponse(false, "Seller is not VIP.");
+        }
+
+        public async Task<ApiResponse<PublicUserProfileDto>> GetPublicUserProfileAsync(int userId)
+        {
+            // 1. Get user
+            var user = await _userRepository.GetUserWithDetailsAsync(userId);
+            if (user == null)
+                return ApiResponse<PublicUserProfileDto>.ErrorResponse("User not found", 404);
+
+            // 2. Get stats
+            var productCount = await _userRepository.CountUserProductsAsync(userId);
+            var orderCount = await _userRepository.CountUserOrdersAsync(userId);
+            var averageRating = await _userRepository.GetAverageRatingForSellerAsync(userId);
+
+            // 3. Get reviews
+            var reviews = await _reviewRepository.GetReviewsBySellerIdAsync(userId);
+
+            // 4. Get products
+            var products = await _productRepository.GetApprovedProductsByUserAsync(userId);
+
+            // 5. Map to DTO
+            var profileDto = new PublicUserProfileDto
+            {
+                FullName = user.FullName,
+                ProfileImageUrl = user.ProfileImageUrl,
+                ProductCount = productCount,
+                SalesCount = orderCount,
+                AverageRating = averageRating,
+
+                Reviews = reviews.Select(r => new ReviewDTO
+                {
+                    BuyerName = r.Reviewer?.FullName ?? "Unknown",
+                    Rating = r.Rating,
+                    Comment = r.Comment,
+                    CreatedAt = r.CreatedAt
+                }).ToList(),
+
+                ProductsForSale = products.Select(p => new GetProductDTO
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    Images = p.Images.Select(img => new GetProductImageDTO
+                    {
+                        Id = img.Id,
+                        ImageUrl = img.ImageUrl,
+                        IsMain = img.IsMain
+                    }).ToList(),
+                    Price = p.Price
+                }).ToList()
+
+
+            };
+
+            return ApiResponse<PublicUserProfileDto>.SuccessResponse(profileDto);
+        }
+
+        public async Task<ApiResponse<string>> UploadProfileImageAsync(int userId, IFormFile imageFile)
+        {
+            var response = new ApiResponse<string>();
+
+            if (imageFile == null || imageFile.Length == 0)
+            {
+                response.Success = false;
+                response.StatusCode = 400;
+                response.Message = "Invalid file.";
+                return response;
             }
 
-            return ApiResponse<bool>.SuccessResponse(true, "Profile image updated successfully.");
+            var user = await _userRepository.GetByIdAsync(userId);
+            if (user == null)
+            {
+                response.Success = false;
+                response.StatusCode = 404;
+                response.Message = "User not found.";
+                return response;
+            }
+
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(imageFile.FileName)}";
+            var folderPath = Path.Combine(_env.WebRootPath, "Images", "Users");
+
+            // Create folder if it doesn't exist
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var savePath = Path.Combine(folderPath, fileName);
+
+            using (var stream = new FileStream(savePath, FileMode.Create))
+            {
+                await imageFile.CopyToAsync(stream);
+            }
+
+            // 🔥 الحصول على رابط كامل
+            var request = _httpContextAccessor.HttpContext.Request;
+            var imageUrl = $"{request.Scheme}://{request.Host}/Images/Users/{fileName}";
+
+            // حفظ الرابط الكامل في قاعدة البيانات
+            user.ProfileImageUrl = imageUrl;
+            await _userRepository.UpdateUserAsync(user);
+
+            response.Success = true;
+            response.StatusCode = 200;
+            response.Data = imageUrl;
+            response.Message = "Profile image uploaded successfully.";
+            return response;
         }
+
+
+
     }
 }

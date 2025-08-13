@@ -150,9 +150,9 @@ namespace Bikya.Services.Services
                 ReviewerId = review.ReviewerId,
                 SellerId = review.SellerId,
                 OrderId = review.OrderId,
-                BuyerName = review.Reviewer?.UserName ?? "",
-                SellerName = review.Seller?.UserName ?? "",
-                ProductName = review.Order?.Product?.Title ?? string.Empty
+                BuyerName = review.Reviewer?.FullName ?? "",
+                SellerName = review.Seller?.FullName ?? "",
+                //ProductName = review.Order?.Product?.Title ?? string.Empty
             };
         }
     }

@@ -25,6 +25,8 @@ namespace Bikya.Data
         public DbSet<ExchangeStatusHistory> ExchangeStatusHistories { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<WishList> WishLists { get; set; }
+        public DbSet<ChatBotFaq> ChatBotFaqs { get; set; }
+        public DbSet<ChatMessage> ChatMessages { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new UserConfiguration());

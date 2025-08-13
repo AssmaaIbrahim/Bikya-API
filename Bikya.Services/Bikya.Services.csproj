@@ -11,6 +11,7 @@
   </ItemGroup>
 	
   <ItemGroup>
+    <ProjectReference Include="..\Bikya.common\Bikya.common.csproj" />
     <ProjectReference Include="..\Bikya.Data\Bikya.Data.csproj" />
     <ProjectReference Include="..\Bikya.DTOs\Bikya.DTOs.csproj" />
   </ItemGroup>

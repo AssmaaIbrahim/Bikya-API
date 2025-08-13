@@ -51,5 +51,11 @@ namespace Bikya.Data.Repositories.Interfaces
         /// Permanently deletes a user by ID (hard delete).
         /// </summary>
         Task DeleteUserAsync(int id);
+        Task<int> CountUserProductsAsync(int userId);
+        Task<int> CountUserOrdersAsync(int userId);
+        Task<decimal> CountUserSalesAsync(int userId);
+        Task<double> GetAverageRatingForSellerAsync(int sellerId);
+        Task UpdateAsync(ApplicationUser user);
+        Task<ApplicationUser?> GetUserWithDetailsAsync(int userId);
     }
 }

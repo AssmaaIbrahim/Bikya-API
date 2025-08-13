@@ -240,5 +240,44 @@ namespace Bikya.Data.Repositories
 
             return await _userManager.Users.CountAsync(predicate, cancellationToken);
         }
+
+
+        public async Task<int> CountUserProductsAsync(int userId)
+        {
+            return await _context.Products.CountAsync(p => p.UserId == userId);
+        }
+
+        public async Task<int> CountUserOrdersAsync(int userId)
+        {
+            return await _context.Orders.CountAsync(o => o.SellerId == userId); // أو حسب ما بتسميها
+        }
+
+        public async Task<decimal> CountUserSalesAsync(int userId)
+        {
+            return await _context.Orders
+                .Where(o => o.SellerId == userId && o.Status == Enums.OrderStatus.Completed)
+                .SumAsync(o => o.TotalAmount); // أو o.TotalPrice حسب اسم العمود
+        }
+
+        public async Task<double> GetAverageRatingForSellerAsync(int sellerId)
+        {
+            return await _context.Reviews
+                .Where(r => r.SellerId == sellerId)
+                .AverageAsync(r => (double?)r.Rating) ?? 0;
+        }
+        public async Task UpdateAsync(ApplicationUser user)
+        {
+            await _userManager.UpdateAsync(user);
+        }
+        public async Task<ApplicationUser?> GetUserWithDetailsAsync(int userId)
+        {
+            return await _context.Users
+                //.Include(u => u.Products)
+                .Include(u => u.ReviewsReceived)
+                .Include(u => u.OrdersSold)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
+        }
+
     }
 }

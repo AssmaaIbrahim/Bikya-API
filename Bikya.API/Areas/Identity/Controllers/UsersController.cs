@@ -126,6 +126,27 @@ namespace Bikya.API.Areas.Identity.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("reactivate")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Reactivate([FromBody] ReactivateAccountDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email))
+                return BadRequest(new { message = "Email is required" });
+
+            var result = await _userService.ReactivateAccountAsync(dto.Email);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("{userId}/stats")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUserStats(int userId)
+        {
+            var result = await _userService.GetUserStatsAsync(userId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+
+
         /// <summary>
         /// Gets the current user's activity status.
         /// </summary>
@@ -162,33 +183,33 @@ namespace Bikya.API.Areas.Identity.Controllers
         /// </summary>
         /// <param name="file">The image file to upload.</param>
         /// <returns>Upload result</returns>
-        [HttpPost("upload-profile-image")]
-        public async Task<IActionResult> UploadProfileImage([FromForm] IFormFile file)
-        {
-            var userId = GetCurrentUserId();
-            if (userId == 0)
-                return Unauthorized(new { message = "Invalid user token" });
+        //[HttpPost("upload-profile-image")]
+        //public async Task<IActionResult> UploadProfileImage([FromForm] IFormFile file)
+        //{
+        //    var userId = GetCurrentUserId();
+        //    if (userId == 0)
+        //        return Unauthorized(new { message = "Invalid user token" });
 
-            if (file == null || file.Length == 0)
-                return BadRequest(new { message = "No file uploaded" });
+        //    if (file == null || file.Length == 0)
+        //        return BadRequest(new { message = "No file uploaded" });
 
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "profiles");
-            if (!Directory.Exists(uploadsFolder))
-                Directory.CreateDirectory(uploadsFolder);
+        //    var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "profiles");
+        //    if (!Directory.Exists(uploadsFolder))
+        //        Directory.CreateDirectory(uploadsFolder);
 
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-            var filePath = Path.Combine(uploadsFolder, fileName);
+        //    var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+        //    var filePath = Path.Combine(uploadsFolder, fileName);
 
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
+        //    using (var stream = new FileStream(filePath, FileMode.Create))
+        //    {
+        //        await file.CopyToAsync(stream);
+        //    }
 
-            var imageUrl = $"/images/profiles/{fileName}";
-            var result = await _userService.UpdateProfileImageAsync(userId, imageUrl);
+        //    var imageUrl = $"/images/profiles/{fileName}";
+        //    var result = await _userService.UpdateProfileImageAsync(userId, imageUrl);
 
-            return StatusCode(result.StatusCode, result);
-        }
+        //    return StatusCode(result.StatusCode, result);
+        //}
 
         /// <summary>
         /// Gets the current user ID from claims.
@@ -207,5 +228,40 @@ namespace Bikya.API.Areas.Identity.Controllers
             var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
             return BadRequest(ApiResponse<object>.ErrorResponse("Validation failed.", 400, errors));
         }
+
+        [HttpGet("{sellerId}/is-vip")]
+        public async Task<IActionResult> CheckVipStatus(int sellerId)
+        {
+            var result = await _userService.IsVipSellerAsync(sellerId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+
+        [HttpGet("public-profile/{userId}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPublicProfile(int userId)
+        {
+            var response = await _userService.GetPublicUserProfileAsync(userId);
+            return StatusCode(response.StatusCode, response);
+        }
+
+        //[HttpPut("update-profile-photo")]
+        //[Authorize]
+        //public async Task<IActionResult> UpdateProfilePhoto([FromBody] UpdateProfilePhotoDto dto)
+        //{
+        //    var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        //    var response = await _userService.UpdateProfileImageAsync(userId, dto);
+        //    return StatusCode(response.StatusCode, response);
+        //}
+
+        [HttpPost("upload-profile-image")]
+        [Authorize] // أو حسب احتياجك
+        public async Task<IActionResult> UploadProfileImage([FromForm] IFormFile imageFile)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+            var response = await _userService.UploadProfileImageAsync(userId, imageFile);
+            return StatusCode(response.StatusCode, response);
+        }
+
     }
 }

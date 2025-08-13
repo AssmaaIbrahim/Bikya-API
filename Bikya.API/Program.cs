@@ -1,4 +1,4 @@
-using Bikya.API.Middleware;
+﻿using Bikya.API.Middleware;
 using Bikya.Data;
 using Bikya.Data.Models;
 using Bikya.Data.Repositories;
@@ -21,7 +21,7 @@ namespace Bikya
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -59,6 +59,8 @@ namespace Bikya
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             builder.Services.AddScoped<IShippingServiceRepository, ShippingServiceRepository>();
             builder.Services.AddScoped<IWishlistRepository, WishlistRepository>();
+            builder.Services.AddScoped<IChatBotFaqRepository, ChatBotFaqRepository>();
+            builder.Services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
 
             // Register Business Services
             builder.Services.AddScoped<IPaymentService, PaymentService>();
@@ -71,6 +73,8 @@ namespace Bikya
             builder.Services.AddScoped<ProductImageService, ProductImageService>();
             builder.Services.AddScoped<IDeliveryService, DeliveryService>();
             builder.Services.AddScoped<WishistService, WishistService>();
+            builder.Services.AddScoped<IChatBotService, ChatBotService>();
+
 
             builder.Services.AddHttpContextAccessor();
             builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
@@ -229,6 +233,12 @@ namespace Bikya
             });
 
             var app = builder.Build();
+            //chatbot seeding
+            using (var scope = app.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<BikyaContext>();
+                await SeedChatBotData.SeedAsync(dbContext); // ✅ now allowed
+            }
 
             // Use Global Exception Handler
             app.UseMiddleware<GlobalExceptionHandler>();

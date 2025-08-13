@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Bikya.DTOs.UserDTOs;
+using Microsoft.AspNetCore.Http;
 namespace Bikya.Services.Interfaces
 {
     public interface IUserService
@@ -16,7 +17,15 @@ namespace Bikya.Services.Interfaces
 
         Task<ApiResponse<bool>> ChangePasswordAsync(int userId, ChangePasswordDto dto);
         Task<ApiResponse<bool>> DeactivateAccountAsync(int userId);
-        Task<ApiResponse<bool>> UpdateProfileImageAsync(int userId, string imageUrl);
+        //Task<ApiResponse<bool>> UpdateProfileImageAsync(int userId, string imageUrl);
+
+        Task<ApiResponse<bool>> ReactivateAccountAsync(string email);
+
+        Task<ApiResponse<UserStatsDTO>> GetUserStatsAsync(int userId);
+        Task<ApiResponse<bool>> IsVipSellerAsync(int sellerId);
+
+        Task<ApiResponse<PublicUserProfileDto>> GetPublicUserProfileAsync(int userId);
+        Task<ApiResponse<string>> UploadProfileImageAsync(int userId, IFormFile imageFile);
 
 
     }
