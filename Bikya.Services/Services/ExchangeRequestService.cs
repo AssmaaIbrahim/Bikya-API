@@ -4,6 +4,7 @@ using Bikya.Data.Repositories.Interfaces;
 using Bikya.Data.Response;
 using Bikya.DTOs.ExchangeRequestDTOs;
 using Bikya.Services.Interfaces;
+using Bikya.Services;
 using Microsoft.Extensions.Logging;
 using System.Transactions;
 using System;
@@ -390,7 +391,9 @@ namespace Bikya.Services.Services
                 Message = request.Message,
                 RequestedAt = request.RequestedAt,
                 OrderForOfferedProductId = request.OrderForOfferedProductId,
-                OrderForRequestedProductId = request.OrderForRequestedProductId
+                OrderForRequestedProductId = request.OrderForRequestedProductId,
+                OfferedProduct = request.OfferedProduct?.ToGetProductDTO(),
+                RequestedProduct = request.RequestedProduct?.ToGetProductDTO()
             };
         }
     }

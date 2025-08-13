@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Bikya.DTOs.ProductDTO;
 
 namespace Bikya.DTOs.ExchangeRequestDTOs
 {
@@ -25,5 +26,9 @@ namespace Bikya.DTOs.ExchangeRequestDTOs
         // Newly added: order references created upon approval
         public int? OrderForOfferedProductId { get; set; }
         public int? OrderForRequestedProductId { get; set; }
+
+        // Newly added: full product details with images for UI rendering
+        public GetProductDTO? OfferedProduct { get; set; }
+        public GetProductDTO? RequestedProduct { get; set; }
     }
 }

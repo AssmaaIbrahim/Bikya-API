@@ -22,8 +22,18 @@ namespace Bikya.Data.Repositories
             {
                 return await _context.ExchangeRequests
                     .AsNoTracking()
+                    .Include(e => e.OfferedProduct)                    
+                        .ThenInclude(p => p.Images)
                     .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Category)
+                    .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.User)
                     .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Images)
+                    .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Category)
+                    .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.User)
                     .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
             }
             catch (Exception ex)
@@ -40,8 +50,16 @@ namespace Bikya.Data.Repositories
                 return await _context.ExchangeRequests
                     .Include(e => e.OfferedProduct)
                         .ThenInclude(p => p.User)
+                    .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Images)
+                    .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Category)
                     .Include(e => e.RequestedProduct)
                         .ThenInclude(p => p.User)
+                    .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Images)
+                    .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Category)
                     .Include(e => e.StatusHistory)
                     .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
             }
@@ -59,7 +77,9 @@ namespace Bikya.Data.Repositories
                 return await _context.ExchangeRequests
                     .AsNoTracking()
                     .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Images)
                     .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Images)
                     .OrderByDescending(e => e.RequestedAt)
                     .ToListAsync(cancellationToken);
             }
@@ -77,7 +97,9 @@ namespace Bikya.Data.Repositories
                 return await _context.ExchangeRequests
                     .AsNoTracking()
                     .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Images)
                     .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Images)
                     .Where(e => e.OfferedProduct != null && e.OfferedProduct.UserId.HasValue && e.OfferedProduct.UserId.Value == senderUserId)
                     .OrderByDescending(e => e.RequestedAt)
                     .ToListAsync(cancellationToken);
@@ -96,7 +118,9 @@ namespace Bikya.Data.Repositories
                 return await _context.ExchangeRequests
                     .AsNoTracking()
                     .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Images)
                     .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Images)
                     .Where(e => e.RequestedProduct != null && e.RequestedProduct.UserId.HasValue && e.RequestedProduct.UserId.Value == receiverUserId)
                     .OrderByDescending(e => e.RequestedAt)
                     .ToListAsync(cancellationToken);
@@ -167,7 +191,9 @@ namespace Bikya.Data.Repositories
                 return await _context.ExchangeRequests
                     .AsNoTracking()
                     .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Images)
                     .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Images)
                     .Where(e => e.Status == status)
                     .OrderByDescending(e => e.RequestedAt)
                     .ToListAsync(cancellationToken);
@@ -186,7 +212,9 @@ namespace Bikya.Data.Repositories
                 return await _context.ExchangeRequests
                     .AsNoTracking()
                     .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Images)
                     .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Images)
                     .Where(e => e.OfferedProductId == productId || e.RequestedProductId == productId)
                     .OrderByDescending(e => e.RequestedAt)
                     .ToListAsync(cancellationToken);
@@ -241,7 +269,9 @@ namespace Bikya.Data.Repositories
                 return await _context.ExchangeRequests
                     .AsNoTracking()
                     .Include(e => e.OfferedProduct)
+                        .ThenInclude(p => p.Images)
                     .Include(e => e.RequestedProduct)
+                        .ThenInclude(p => p.Images)
                     .Where(e => e.RequestedAt >= startDate && e.RequestedAt <= endDate)
                     .OrderByDescending(e => e.RequestedAt)
                     .ToListAsync(cancellationToken);
