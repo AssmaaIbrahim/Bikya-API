@@ -132,8 +132,23 @@ namespace Bikya.Data.Repositories
         {
             try
             {
-                _dbSet.Attach(entity);
-                _context.Entry(entity).State = EntityState.Modified;
+                // Check if entity is already being tracked
+                var existingEntity = _context.ChangeTracker.Entries<T>()
+                    .FirstOrDefault(e => e.Entity.GetType().GetProperty("Id")?.GetValue(e.Entity)?.Equals(
+                        entity.GetType().GetProperty("Id")?.GetValue(entity)) == true);
+
+                if (existingEntity != null)
+                {
+                    // Entity is already being tracked, update its properties
+                    _context.Entry(existingEntity.Entity).CurrentValues.SetValues(entity);
+                }
+                else
+                {
+                    // Entity is not being tracked, attach it
+                    _dbSet.Attach(entity);
+                    _context.Entry(entity).State = EntityState.Modified;
+                }
+
                 await _context.SaveChangesAsync(cancellationToken);
                 return entity;
             }

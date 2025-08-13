@@ -237,7 +237,7 @@ namespace Bikya
             using (var scope = app.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<BikyaContext>();
-                await SeedChatBotData.SeedAsync(dbContext); // ✅ now allowed
+                 await SeedChatBotData.SeedAsync(dbContext); // ✅ now allowed
             }
 
             // Use Global Exception Handler
@@ -246,7 +246,7 @@ namespace Bikya
             // Seed roles
             using (var scope = app.Services.CreateScope())
             {
-                SeedRoles(scope.ServiceProvider).Wait();
+               SeedRoles(scope.ServiceProvider).Wait();
             }
 
             if (app.Environment.IsDevelopment())

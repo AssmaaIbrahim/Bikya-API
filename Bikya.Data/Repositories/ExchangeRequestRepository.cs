@@ -313,5 +313,22 @@ namespace Bikya.Data.Repositories
                 throw;
             }
         }
+
+        public async Task<ExchangeRequest?> GetByOrderIdAsync(int orderId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.ExchangeRequests
+                    .AsNoTracking()
+                    .Include(e => e.OfferedProduct)
+                    .Include(e => e.RequestedProduct)
+                    .FirstOrDefaultAsync(e => e.OrderForOfferedProductId == orderId || e.OrderForRequestedProductId == orderId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving exchange request by order ID {OrderId}", orderId);
+                throw;
+            }
+        }
     }
 }

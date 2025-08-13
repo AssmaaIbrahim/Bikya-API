@@ -30,5 +30,7 @@ namespace Bikya.Data.Repositories.Interfaces
         Task<int> GetRequestsCountByUserAsync(int userId, CancellationToken cancellationToken = default);
 
         Task<IEnumerable<ExchangeRequest>> GetRequestsByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default);
+
+        Task<ExchangeRequest?> GetByOrderIdAsync(int orderId, CancellationToken cancellationToken = default);
     }
 }
