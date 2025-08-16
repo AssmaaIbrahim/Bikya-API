@@ -626,7 +626,7 @@ namespace Bikya.Services.Services
         {
             try
             {
-                var order = await _orderRepository.GetByIdAsync(orderId);
+                var order = await _orderRepository.GetOrderWithAllRelationsAsync(orderId);
                 if (order == null)
                 {
                     return ApiResponse<OrderDTO>.ErrorResponse("Order not found", 404);
@@ -635,6 +635,12 @@ namespace Bikya.Services.Services
                 order.Status = newStatus;
                 await _orderRepository.UpdateAsync(order);
                 await _orderRepository.SaveChangesAsync();
+                
+                // If this is a swap order and it's being completed, also update the related order
+                if (order.IsSwapOrder && newStatus == OrderStatus.Completed)
+                {
+                    await UpdateRelatedSwapOrderStatusAsync(order);
+                }
                 
                 // Return the updated order
                 return await GetOrderByIdAsync(orderId);
@@ -654,13 +660,13 @@ namespace Bikya.Services.Services
         public async Task<ApiResponse<bool>> UpdateOrderStatusAsync(UpdateOrderStatusDTO dto)
         {
             try
-        {
-            if (!Enum.TryParse<OrderStatus>(dto.NewStatus, true, out var newStatus))
+            {
+                if (!Enum.TryParse<OrderStatus>(dto.NewStatus, true, out var newStatus))
                 {
                     return ApiResponse<bool>.ErrorResponse("Invalid status", 400);
                 }
 
-                var order = await _orderRepository.GetByIdAsync(dto.OrderId);
+                var order = await _orderRepository.GetOrderWithAllRelationsAsync(dto.OrderId);
                 if (order == null)
                 {
                     return ApiResponse<bool>.ErrorResponse("Order not found", 404);
@@ -669,6 +675,12 @@ namespace Bikya.Services.Services
                 order.Status = newStatus;
                 await _orderRepository.UpdateAsync(order);
                 await _orderRepository.SaveChangesAsync();
+                
+                // If this is a swap order and it's being completed, also update the related order
+                if (order.IsSwapOrder && newStatus == OrderStatus.Completed)
+                {
+                    await UpdateRelatedSwapOrderStatusAsync(order);
+                }
                 
                 return ApiResponse<bool>.SuccessResponse(true, "Order status updated successfully");
             }
@@ -981,6 +993,70 @@ namespace Bikya.Services.Services
             {
                 _logger.LogError(ex, "Error updating shipping info for order {OrderId}", orderId);
                 return ApiResponse<bool>.ErrorResponse($"Failed to update shipping info: {ex.Message}", 500);
+            }
+        }
+
+        private async Task UpdateRelatedSwapOrderStatusAsync(Order completedOrder)
+        {
+            try
+            {
+                // First, try to find related order using exchange request (most reliable method)
+                var exchangeRequest = await _exchangeRequestRepository.GetByOrderIdAsync(completedOrder.Id);
+                if (exchangeRequest != null)
+                {
+                    int? relatedOrderId = null;
+                    if (exchangeRequest.OrderForOfferedProductId == completedOrder.Id)
+                    {
+                        relatedOrderId = exchangeRequest.OrderForRequestedProductId;
+                    }
+                    else if (exchangeRequest.OrderForRequestedProductId == completedOrder.Id)
+                    {
+                        relatedOrderId = exchangeRequest.OrderForOfferedProductId;
+                    }
+                    
+                    if (relatedOrderId.HasValue)
+                    {
+                        // Get the related order to verify it exists and is a swap order
+                        var relatedOrder = await _orderRepository.GetByIdAsync(relatedOrderId.Value);
+                        if (relatedOrder != null && relatedOrder.IsSwapOrder)
+                        {
+                            // Update the related order status to Completed
+                            var success = await _orderRepository.UpdateOrderStatusAsync(relatedOrder.Id, OrderStatus.Completed);
+                            if (success)
+                            {
+                                await _orderRepository.SaveChangesAsync();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Fallback: try to find related order using heuristic approach
+                    var allOrders = await _orderRepository.GetAllAsync();
+                    
+                    // Look for related order with more flexible criteria
+                    var relatedOrder = allOrders.FirstOrDefault(o => 
+                        o.Id != completedOrder.Id && 
+                        o.IsSwapOrder && 
+                        o.ProductId != completedOrder.ProductId &&
+                        o.CreatedAt.Date == completedOrder.CreatedAt.Date && // Same day exchange
+                        Math.Abs((o.CreatedAt - completedOrder.CreatedAt).TotalMinutes) <= 10); // Within 10 minutes
+                    
+                    if (relatedOrder != null)
+                    {
+                        // Update the related order status to Completed
+                        var success = await _orderRepository.UpdateOrderStatusAsync(relatedOrder.Id, OrderStatus.Completed);
+                        if (success)
+                        {
+                            await _orderRepository.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update related swap order status for order {OrderId}", completedOrder.Id);
+                // Don't throw the exception to avoid affecting the main order update
             }
         }
     }

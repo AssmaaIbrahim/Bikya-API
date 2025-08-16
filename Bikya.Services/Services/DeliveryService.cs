@@ -19,6 +19,7 @@ namespace Bikya.Services.Services
         private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly IJwtService _jwtService;
         private readonly IOrderRepository _orderRepository;
+        private readonly IExchangeRequestRepository _exchangeRequestRepository;
         private readonly IProductRepository _productRepository;
 
         private readonly ILogger<DeliveryService> _logger;
@@ -29,6 +30,7 @@ namespace Bikya.Services.Services
             IJwtService jwtService,
             IOrderRepository orderRepository,
             IProductRepository productRepository,
+            IExchangeRequestRepository exchangeRequestRepository,
             ILogger<DeliveryService> logger)
         {
             _userManager = userManager;
@@ -36,6 +38,7 @@ namespace Bikya.Services.Services
             _jwtService = jwtService;
             _orderRepository = orderRepository;
             _productRepository = productRepository;
+            _exchangeRequestRepository = exchangeRequestRepository;
             _logger = logger;
         }
 
@@ -282,39 +285,16 @@ namespace Bikya.Services.Services
         {
             try
             {
-                _logger.LogInformation("Updating order {OrderId} status to {NewStatus}", orderId, updateDto.Status);
-                _logger.LogInformation("UpdateDto received: Status={Status}, Notes={Notes}", updateDto.Status, updateDto.Notes);
-                _logger.LogInformation("Status type: {StatusType}", updateDto.Status.GetType().Name);
-
                 var order = await _orderRepository.GetOrderWithAllRelationsAsync(orderId);
 
                 if (order == null)
                 {
-                    _logger.LogWarning("Order {OrderId} not found", orderId);
                     return ApiResponse<bool>.ErrorResponse("Order not found", 404);
                 }
-
-                _logger.LogInformation("Current order status: {CurrentStatus}, New status: {NewStatus}", order.Status, updateDto.Status);
-                _logger.LogInformation("Current status type: {CurrentStatusType}, New status type: {NewStatusType}", 
-                    order.Status.GetType().Name, updateDto.Status.GetType().Name);
 
                 // Validate status transition
                 if (!IsValidStatusTransition(order.Status, updateDto.Status))
                 {
-                    _logger.LogWarning("Invalid status transition from {CurrentStatus} to {NewStatus}", order.Status, updateDto.Status);
-                    _logger.LogWarning("Valid transitions from {CurrentStatus}:", order.Status);
-                    if (order.Status == OrderStatus.Paid)
-                    {
-                        _logger.LogWarning("From Paid: Shipped, Cancelled");
-                    }
-                    else if (order.Status == OrderStatus.Shipped)
-                    {
-                        _logger.LogWarning("From Shipped: Completed, Cancelled");
-                    }
-                    else
-                    {
-                        _logger.LogWarning("No valid transitions from current status");
-                    }
                     return ApiResponse<bool>.ErrorResponse("Invalid status transition", 400);
                 }
 
@@ -330,24 +310,14 @@ namespace Bikya.Services.Services
                             if (order.ShippingInfo.Status == ShippingStatus.Pending)
                             {
                                 order.ShippingInfo.Status = ShippingStatus.InTransit;
-                                _logger.LogInformation("Order {OrderId} marked as shipped and in transit", orderId);
-                            }
-                            else
-                            {
-                                _logger.LogInformation("Order {OrderId} status updated to Shipped (shipping status unchanged)", orderId);
                             }
                             break;
                         case OrderStatus.Completed:
                             order.CompletedAt = DateTime.UtcNow;
                             order.ShippingInfo.Status = ShippingStatus.Delivered;
-                            _logger.LogInformation("Order {OrderId} marked as completed and delivered", orderId);
                             break;
                         case OrderStatus.Cancelled:
                             order.ShippingInfo.Status = ShippingStatus.Failed;
-                            _logger.LogInformation("Order {OrderId} marked as cancelled and shipping failed", orderId);
-                            break;
-                        default:
-                            _logger.LogInformation("Order {OrderId} status updated to {Status}", orderId, updateDto.Status);
                             break;
                     }
                 }
@@ -366,8 +336,6 @@ namespace Bikya.Services.Services
 
                     if (order.ShippingInfo.Status != expectedShippingStatus)
                     {
-                        _logger.LogInformation("Auto-correcting shipping status from {Current} to {Expected} for order {OrderId}", 
-                            order.ShippingInfo.Status, expectedShippingStatus, orderId);
                         order.ShippingInfo.Status = expectedShippingStatus;
                     }
                 }
@@ -383,6 +351,13 @@ namespace Bikya.Services.Services
 
 
                 _logger.LogInformation("Order {OrderId} status updated successfully to {NewStatus}", orderId, updateDto.Status);
+                
+                // If this is a swap order and it's being completed, also update the related order
+                if (order.IsSwapOrder && updateDto.Status == OrderStatus.Completed)
+                {
+                    await UpdateRelatedSwapOrderStatusAsync(order);
+                }
+                
                 return ApiResponse<bool>.SuccessResponse(true, "Order status updated successfully");
             }
             catch (Exception ex)
@@ -396,27 +371,21 @@ namespace Bikya.Services.Services
         {
             try
             {
-                _logger.LogInformation("Updating shipping status for order {OrderId} to {NewStatus}", orderId, updateDto.Status);
-
                 var order = await _orderRepository.GetOrderWithAllRelationsAsync(orderId);
 
                 if (order == null)
                 {
-                    _logger.LogWarning("Order {OrderId} not found", orderId);
                     return ApiResponse<bool>.ErrorResponse("Order not found", 404);
                 }
 
                 if (order.ShippingInfo == null)
                 {
-                    _logger.LogWarning("Order {OrderId} has no shipping info", orderId);
                     return ApiResponse<bool>.ErrorResponse("Order has no shipping information", 400);
                 }
 
                 // Validate shipping status transition
                 if (!IsValidShippingStatusTransition(order.ShippingInfo.Status, updateDto.Status))
                 {
-                    _logger.LogWarning("Invalid shipping status transition from {CurrentStatus} to {NewStatus}", 
-                        order.ShippingInfo.Status, updateDto.Status);
                     return ApiResponse<bool>.ErrorResponse("Invalid shipping status transition", 400);
                 }
 
@@ -430,37 +399,26 @@ namespace Bikya.Services.Services
                         if (order.Status == OrderStatus.Paid)
                         {
                             order.Status = OrderStatus.Shipped;
-                            _logger.LogInformation("Order {OrderId} automatically updated to Shipped", orderId);
                         }
                         break;
                     case ShippingStatus.Delivered:
                         order.Status = OrderStatus.Completed;
                         order.CompletedAt = DateTime.UtcNow;
-                        _logger.LogInformation("Order {OrderId} automatically updated to Completed", orderId);
                         break;
                     case ShippingStatus.Failed:
                         order.Status = OrderStatus.Cancelled;
-                        _logger.LogInformation("Order {OrderId} automatically updated to Cancelled", orderId);
-                        break;
-                    case ShippingStatus.Pending:
-                        // Don't change order status if shipping is back to pending
-                        _logger.LogInformation("Order {OrderId} shipping status set to Pending", orderId);
                         break;
                 }
 
                 // Additional validation: If order is completed but shipping is not delivered
                 if (order.Status == OrderStatus.Completed && order.ShippingInfo?.Status != ShippingStatus.Delivered)
                 {
-                    _logger.LogWarning("Order {OrderId} is completed but shipping status is {ShippingStatus}. Auto-correcting...", 
-                        orderId, order.ShippingInfo?.Status);
                     order.ShippingInfo.Status = ShippingStatus.Delivered;
                 }
 
                 // Additional validation: If shipping is delivered but order is not completed
                 if (order.ShippingInfo?.Status == ShippingStatus.Delivered && order.Status != OrderStatus.Completed)
                 {
-                    _logger.LogWarning("Shipping {OrderId} is delivered but order status is {OrderStatus}. Auto-correcting...", 
-                        orderId, order.Status);
                     order.Status = OrderStatus.Completed;
                     order.CompletedAt = DateTime.UtcNow;
                 }
@@ -468,7 +426,12 @@ namespace Bikya.Services.Services
                 // Save changes to database
                 await _orderRepository.UpdateAsync(order);
                 
-                _logger.LogInformation("Shipping status for order {OrderId} updated successfully to {NewStatus}", orderId, updateDto.Status);
+                // If this is a swap order and shipping is delivered, also update the related order
+                if (order.IsSwapOrder && updateDto.Status == ShippingStatus.Delivered)
+                {
+                    await UpdateRelatedSwapOrderStatusAsync(order);
+                }
+                
                 return ApiResponse<bool>.SuccessResponse(true, "Shipping status updated successfully");
             }
             catch (Exception ex)
@@ -527,6 +490,85 @@ namespace Bikya.Services.Services
             {
                 _logger.LogError(ex, "Failed to create delivery account");
                 return ApiResponse<bool>.ErrorResponse($"Failed to create delivery account: {ex.Message}", 500);
+            }
+        }
+
+        private async Task UpdateRelatedSwapOrderStatusAsync(Order completedOrder)
+        {
+            try
+            {
+                // First, try to find related order using exchange request (most reliable method)
+                var exchangeRequest = await _exchangeRequestRepository.GetByOrderIdAsync(completedOrder.Id);
+                if (exchangeRequest != null)
+                {
+                    int? relatedOrderId = null;
+                    if (exchangeRequest.OrderForOfferedProductId == completedOrder.Id)
+                    {
+                        relatedOrderId = exchangeRequest.OrderForRequestedProductId;
+                    }
+                    else if (exchangeRequest.OrderForRequestedProductId == completedOrder.Id)
+                    {
+                        relatedOrderId = exchangeRequest.OrderForOfferedProductId;
+                    }
+                    
+                    if (relatedOrderId.HasValue)
+                    {
+                        // Get the related order to verify it exists and is a swap order
+                        var relatedOrder = await _orderRepository.GetOrderWithShippingInfoAsync(relatedOrderId.Value);
+                        if (relatedOrder != null && relatedOrder.IsSwapOrder)
+                        {
+                            // Update the related order status to Completed
+                            var success = await _orderRepository.UpdateOrderStatusAsync(relatedOrder.Id, OrderStatus.Completed);
+                            if (success)
+                            {
+                                // Update shipping status if available
+                                if (relatedOrder.ShippingInfo != null)
+                                {
+                                    relatedOrder.ShippingInfo.Status = ShippingStatus.Delivered;
+                                    await _orderRepository.UpdateAsync(relatedOrder);
+                                }
+                                
+                                await _orderRepository.SaveChangesAsync();
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    // Fallback: try to find related order using heuristic approach
+                    var allOrders = await _orderRepository.GetAllAsync();
+                    
+                    // Look for related order with more flexible criteria
+                    var relatedOrder = allOrders.FirstOrDefault(o => 
+                        o.Id != completedOrder.Id && 
+                        o.IsSwapOrder && 
+                        o.ProductId != completedOrder.ProductId &&
+                        o.CreatedAt.Date == completedOrder.CreatedAt.Date && // Same day exchange
+                        Math.Abs((o.CreatedAt - completedOrder.CreatedAt).TotalMinutes) <= 10); // Within 10 minutes
+                    
+                    if (relatedOrder != null)
+                    {
+                        // Update the related order status to Completed
+                        var success = await _orderRepository.UpdateOrderStatusAsync(relatedOrder.Id, OrderStatus.Completed);
+                        if (success)
+                        {
+                            // Update shipping status if available
+                            var orderToUpdate = await _orderRepository.GetOrderWithShippingInfoAsync(relatedOrder.Id);
+                            if (orderToUpdate?.ShippingInfo != null)
+                            {
+                                orderToUpdate.ShippingInfo.Status = ShippingStatus.Delivered;
+                                await _orderRepository.UpdateAsync(orderToUpdate);
+                            }
+                            
+                            await _orderRepository.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to update related swap order status for order {OrderId}", completedOrder.Id);
+                // Don't throw the exception to avoid affecting the main order update
             }
         }
 

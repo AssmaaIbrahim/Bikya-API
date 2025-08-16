@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bikya.Data.Migrations
 {
     [DbContext(typeof(BikyaContext))]
-    [Migration("20250813062102_iniitt")]
-    partial class iniitt
+    [Migration("20250813073027_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
