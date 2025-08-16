@@ -52,7 +52,7 @@ namespace Bikya.Services.Interfaces
         /// <summary>
         /// Gets all not approved products for a specific user.
         /// </summary>
-        Task<IEnumerable<GetProductDTO>> GetApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<GetProductDTO>> GetApprovedProductsByUserAsync(int userId, int? currrentUser = null, CancellationToken cancellationToken = default); 
 
         /// <summary>
         /// Gets all products for a specific category.

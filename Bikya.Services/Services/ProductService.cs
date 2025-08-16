@@ -134,14 +134,14 @@ namespace Bikya.Services.Services
             }
         }
 
-        public async Task<IEnumerable<GetProductDTO>> GetApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<GetProductDTO>> GetApprovedProductsByUserAsync(int userId,int? currrentUser=null, CancellationToken cancellationToken = default)
         {
             try
             {
                 await ValidateUserExistsAsync(userId, cancellationToken);
                 var products= await _productRepository.GetApprovedProductsByUserAsync(userId, cancellationToken);
 
-                return await MapProductsWithWishlistAsync(products, userId, cancellationToken);
+                return await MapProductsWithWishlistAsync(products, currrentUser, cancellationToken);
             }
             catch (BusinessException)
             {

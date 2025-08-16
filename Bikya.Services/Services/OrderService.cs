@@ -18,6 +18,7 @@ namespace Bikya.Services.Services
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IWishlistRepository _wishlistRepository;
         private readonly IShippingServiceRepository _shippingInfoRepository;
         private readonly IExchangeRequestRepository _exchangeRequestRepository;
         private readonly ILogger<OrderService> _logger;
@@ -26,6 +27,7 @@ namespace Bikya.Services.Services
             IOrderRepository orderRepository,
             IProductRepository productRepository,
             IUserRepository userRepository,
+            IWishlistRepository wishlistRepository,
             IShippingServiceRepository shippingInfoRepository,
             IExchangeRequestRepository exchangeRequestRepository,
             ILogger<OrderService> logger)
@@ -33,6 +35,7 @@ namespace Bikya.Services.Services
             _orderRepository = orderRepository ?? throw new ArgumentNullException(nameof(orderRepository));
             _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _wishlistRepository = wishlistRepository ?? throw new ArgumentNullException(nameof(wishlistRepository));
             _shippingInfoRepository = shippingInfoRepository ?? throw new ArgumentNullException(nameof(shippingInfoRepository));
             _exchangeRequestRepository = exchangeRequestRepository ?? throw new ArgumentNullException(nameof(exchangeRequestRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -81,7 +84,7 @@ namespace Bikya.Services.Services
 
                 // Idempotency: if a pending swap order already exists for this product/buyer, reuse it
                 var alreadyExistingOrder = await _orderRepository.GetByProductAndBuyerAsync(dto.ProductId, dto.BuyerId);
-                if (alreadyExistingOrder != null && alreadyExistingOrder.Status == OrderStatus.Pending && (alreadyExistingOrder.IsSwapOrder || dto.IsSwapOrder || product.Status == Data.Enums.ProductStatus.Traded))
+                if (alreadyExistingOrder != null && alreadyExistingOrder.Status == OrderStatus.Pending && (alreadyExistingOrder.IsSwapOrder || dto.IsSwapOrder || product.Status == Data.Enums.ProductStatus.Trading))
                 {
                     _logger.LogInformation("Found existing pending swap order {OrderId} for product {ProductId} and buyer {BuyerId}. Returning existing order instead of creating a new one.", alreadyExistingOrder.Id, dto.ProductId, dto.BuyerId);
 
@@ -114,7 +117,7 @@ namespace Bikya.Services.Services
                 }
 
                 // Check if this is a swap order (no product price, only shipping fee)
-                bool isSwapOrder = dto.IsSwapOrder || product.Status == Data.Enums.ProductStatus.Traded;
+                bool isSwapOrder = dto.IsSwapOrder || product.Status == Data.Enums.ProductStatus.Trading;
 
                 // Idempotency for swap orders: ensure only one order per (ProductId, BuyerId) exists
                 if (isSwapOrder)
@@ -272,6 +275,11 @@ namespace Bikya.Services.Services
                 _logger.LogInformation("Saving order to database");
                 await _orderRepository.AddAsync(order);
                 await _orderRepository.SaveChangesAsync();
+
+                product.Status = Data.Enums.ProductStatus.InProcess;
+                _productRepository.Update(product);
+                await _productRepository.SaveChangesAsync();
+              await  _wishlistRepository.RemoveProductFromAllWishlistsAsync(product.Id);
 
                 _logger.LogInformation("Order {OrderId} created successfully for product {ProductId}", order.Id, product.Id);
 
@@ -572,6 +580,44 @@ namespace Bikya.Services.Services
                 return ApiResponse<List<OrderDTO>>.ErrorResponse($"Failed to retrieve orders: {ex.Message}", 500);
             }
         }
+        public async Task<ApiResponse<List<OrderReviewDTO>>> GetOrdersNeedingReviewAsync(int userId)
+        {
+            try
+            {
+                var orders = await _orderRepository.GetOrdersNeedingReviewAsync(userId);
+                var orderDtos = orders.Where(o=>o.Reviews==null||o.Reviews.Count==0) .Select(o => new OrderReviewDTO
+                {
+                    Id = o.Id,
+                 ProductId=o.ProductId,
+                    ProductTitle = o.Product?.Title ?? "Unknown Product",
+                 BuyerId = o.BuyerId,
+                    BuyerName = o.Buyer?.FullName ?? "Unknown Seller",
+                    SellerId = o.SellerId,
+                    SellerName = o.Seller?.FullName ?? "Unknown Seller",
+            
+                    CreatedAt = o.CreatedAt,
+                    Status=o.Status,
+                    IsSwapOrder = o.IsSwapOrder,
+
+
+                }).ToList();
+           
+      
+
+
+      
+        /// <summary>
+        /// Indicates whether this order is part of a product swap
+        /// </summary>
+      
+                return ApiResponse<List<OrderReviewDTO>>.SuccessResponse(orderDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving all orders");
+                return ApiResponse<List<OrderReviewDTO>>.ErrorResponse($"Failed to retrieve orders: {ex.Message}", 500);
+            }
+        }
 
         /// <summary>
         /// Updates the status of an order.
@@ -665,6 +711,7 @@ namespace Bikya.Services.Services
                     Id = o.Id,
                     ProductId = o.ProductId,
                     ProductTitle = o.Product?.Title ?? "Unknown Product",
+                    ProductImages = o.Product.Images,
                     BuyerId = o.BuyerId,
                     BuyerName = o.Buyer?.FullName ?? "Unknown Buyer",
                     SellerId = o.SellerId,
@@ -674,7 +721,8 @@ namespace Bikya.Services.Services
                     SellerAmount = o.SellerAmount,
                     Status = o.Status.ToString(),
                     CreatedAt = o.CreatedAt,
-                    IsSwapOrder = o.IsSwapOrder
+                    IsSwapOrder = o.IsSwapOrder,
+                    NeedReview = o.Reviews == null || o.Reviews.Count == 0
                 }).ToList();
 
                 return ApiResponse<List<OrderDTO>>.SuccessResponse(orderDtos);

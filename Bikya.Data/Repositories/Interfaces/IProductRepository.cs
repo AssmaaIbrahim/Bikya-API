@@ -1,4 +1,5 @@
-﻿using Bikya.Data.Models;
+﻿using Bikya.Data.Enums;
+using Bikya.Data.Models;
 using Bikya.Data.Repositories.Interfaces;
 using System.Collections.Generic;
 using System.Threading;
@@ -76,5 +77,6 @@ namespace Bikya.Data.Repositories.Interfaces
         /// Rejects a product by setting IsApproved to false.
         /// </summary>
         Task RejectProductAsync(int productId, CancellationToken cancellationToken = default);
+        Task updateStatus(int productId, ProductStatus productStatus, CancellationToken cancellationToken = default);
     }
 }

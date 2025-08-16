@@ -129,6 +129,15 @@ namespace Bikya.API.Areas.Order
             var result = await _orderService.GetAllOrdersAsync();
             return StatusCode(result.StatusCode, result);
         }
+        [HttpGet("ordersForReview")]
+        [Authorize]
+        public async Task<IActionResult> GetOrdersForReview()
+        {
+            int userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+        
+        var result = await _orderService.GetOrdersNeedingReviewAsync(userId);
+            return StatusCode(result.StatusCode, result);
+        }
 
         /// <summary>
         /// Gets an order by ID.

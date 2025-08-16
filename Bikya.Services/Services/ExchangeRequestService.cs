@@ -1,15 +1,16 @@
 using Bikya.Data.Enums;
 using Bikya.Data.Models;
+using Bikya.Data.Repositories;
 using Bikya.Data.Repositories.Interfaces;
 using Bikya.Data.Response;
 using Bikya.DTOs.ExchangeRequestDTOs;
-using Bikya.Services.Interfaces;
 using Bikya.Services;
+using Bikya.Services.Interfaces;
 using Microsoft.Extensions.Logging;
-using System.Transactions;
 using System;
-using System.Linq;
 using System.Collections.Generic;
+using System.Linq;
+using System.Transactions;
 
 namespace Bikya.Services.Services
 {
@@ -17,17 +18,20 @@ namespace Bikya.Services.Services
     {
         private readonly IExchangeRequestRepository _exchangeRequestRepository;
         private readonly IProductRepository _productRepository;
+        private readonly IWishlistRepository _wishlistRepository;
         private readonly IOrderRepository _orderRepository;
         private readonly ILogger<ExchangeRequestService> _logger;
 
         public ExchangeRequestService(
             IExchangeRequestRepository exchangeRequestRepository,
             IProductRepository productRepository,
+            IWishlistRepository wishlistRepository,
             IOrderRepository orderRepository,
             ILogger<ExchangeRequestService> logger)
         {
             _exchangeRequestRepository = exchangeRequestRepository ?? throw new ArgumentNullException(nameof(exchangeRequestRepository));
             _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
+            _wishlistRepository = wishlistRepository ?? throw new ArgumentNullException(nameof(wishlistRepository));
             _orderRepository = orderRepository ?? throw new ArgumentNullException(nameof(orderRepository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
@@ -186,10 +190,13 @@ namespace Bikya.Services.Services
                     return ApiResponse<ExchangeRequestDTO>.ErrorResponse("One or both products not found", 404);
                 }
 
-                // Mark products as traded
-                exchangeRequest.OfferedProduct.Status = ProductStatus.Traded;
-                exchangeRequest.RequestedProduct.Status = ProductStatus.Traded;
-                
+                // Mark products as trading
+                exchangeRequest.OfferedProduct.Status = ProductStatus.Trading;
+                exchangeRequest.RequestedProduct.Status = ProductStatus.Trading;
+
+                await _wishlistRepository.RemoveProductFromAllWishlistsAsync(exchangeRequest.OfferedProduct.Id);
+                await _wishlistRepository.RemoveProductFromAllWishlistsAsync(exchangeRequest.RequestedProduct.Id);
+
                 // Update request status
                 exchangeRequest.Status = ExchangeStatus.Accepted;
                 exchangeRequest.RespondedAt = DateTime.UtcNow;
@@ -343,6 +350,9 @@ namespace Bikya.Services.Services
 
                 // Refresh the request to get updated data
                 var updatedRequest = await _exchangeRequestRepository.GetByIdWithProductsAsync(requestId);
+                updatedRequest.OfferedProduct.Status = ProductStatus.Available;
+                updatedRequest.RequestedProduct.Status = ProductStatus.Available;
+                _productRepository.SaveChangesAsync();
                 
                 _logger.LogInformation("Exchange request {RequestId} rejected by user {UserId}", requestId, currentUserId);
                 

@@ -10,7 +10,9 @@ namespace Bikya.Services.Interfaces
         Task<ApiResponse<OrderDTO>> CreateOrderAsync(CreateOrderDTO dto);
         Task<ApiResponse<OrderDTO>> GetOrderByIdAsync(int orderId);
         Task<ApiResponse<List<OrderDTO>>> GetAllOrdersAsync();
-        Task<ApiResponse<OrderDTO>> UpdateOrderStatusAsync(int orderId, OrderStatus newStatus);
+          Task<ApiResponse<List<OrderReviewDTO>>> GetOrdersNeedingReviewAsync(int userId);
+     
+            Task<ApiResponse<OrderDTO>> UpdateOrderStatusAsync(int orderId, OrderStatus newStatus);
         
         /// <summary>
         /// Updates the status of an order using DTO

@@ -10,7 +10,7 @@ namespace Bikya.Data.Enums
     {
         Available  ,   
         InProcess ,   
-        Sold  ,        // sold
-        Traded     // exchanged
+        Trading,     // exchanged
+        Sold        // sold
     }
 }

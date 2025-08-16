@@ -241,7 +241,8 @@ namespace Bikya.API.Areas.Identity.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> GetPublicProfile(int userId)
         {
-            var response = await _userService.GetPublicUserProfileAsync(userId);
+            var currentUser = GetCurrentUserId();
+            var response = await _userService.GetPublicUserProfileAsync(userId, currentUser);
             return StatusCode(response.StatusCode, response);
         }
 

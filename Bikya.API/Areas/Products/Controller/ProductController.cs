@@ -2,6 +2,7 @@
 using Bikya.Data.Response;
 using Bikya.DTOs.ProductDTO;
 using Bikya.Services.Exceptions;
+using Bikya.Services.Interfaces;
 using Bikya.Services.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,13 +18,13 @@ namespace Bikya.API.Areas.Products.Controller
     [ApiController]
     public class ProductController : ControllerBase
     {
-        private readonly ProductService _productService;
+        private readonly IProductService _productService;
         private readonly ProductImageService _productImageService;
         private readonly IWebHostEnvironment _env;
 
         public ProductController(
             IWebHostEnvironment env,
-            ProductService productService,
+            IProductService productService,
             ProductImageService productImageService)
         {
             _env = env ?? throw new ArgumentNullException(nameof(env));

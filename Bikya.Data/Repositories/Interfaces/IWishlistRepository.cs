@@ -17,6 +17,7 @@ namespace Bikya.Data.Repositories.Interfaces
         Task<WishList?> GetByUserAndProductAsync(int userId, int productId, CancellationToken cancellationToken = default);
         Task<bool> ExistsAsync(int userId, int productId);
         Task<HashSet<int>> GetProductIdsByUserIdAsync(int userId, CancellationToken cancellationToken = default);
+        Task RemoveProductFromAllWishlistsAsync(int productId, CancellationToken cancellationToken = default);
 
     }
 }

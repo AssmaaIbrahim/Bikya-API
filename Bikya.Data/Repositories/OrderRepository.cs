@@ -58,10 +58,12 @@ namespace Bikya.Data.Repositories
             {
                 return await _context.Orders
                     .AsNoTracking()
-                    .Include(o => o.Product)
+                    .Include(o => o.Product).ThenInclude(p=>p.Images)
                     .Include(o => o.Buyer)
                     .Include(o => o.Seller)
-                    .Where(o => o.BuyerId == userId || o.SellerId == userId)
+                    .Include(o=>o.Reviews)
+                    //.Where(o => o.BuyerId == userId || o.SellerId == userId)
+                    .Where(o => o.BuyerId == userId )
                     .OrderByDescending(o => o.CreatedAt)
                     .ToListAsync(cancellationToken);
             }
@@ -324,6 +326,28 @@ namespace Bikya.Data.Repositories
                 _logger.LogError(ex, "Error updating order {OrderId}", entity.Id);
                 throw;
             }
+        }
+
+        public async Task<List<Order>> GetOrdersNeedingReviewAsync(int userId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.Orders
+                    .AsNoTracking()
+                    .Include(o=>o.Product)
+                    .Include(o=>o.Buyer)
+                    .Include(o=>o.Seller)
+                    .Include(o=>o.Reviews)
+                    .Where(o => o.BuyerId == userId && o.Status == OrderStatus.Completed)
+                        .ToListAsync(cancellationToken);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving order for buyer {userId} that needing review" ,userId );
+                throw;
+            }
+
         }
     }
 }

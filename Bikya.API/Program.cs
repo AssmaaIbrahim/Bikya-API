@@ -69,7 +69,7 @@ namespace Bikya
             builder.Services.AddScoped<ICategoryService, CategoryService>();
             builder.Services.AddScoped<IReviewService, Bikya.Services.Services.ReviewService>();
             builder.Services.AddScoped<IShippingService, ShippingService>();
-            builder.Services.AddScoped<Bikya.Services.Services.ProductService, Bikya.Services.Services.ProductService>();
+            builder.Services.AddScoped<IProductService, Bikya.Services.Services.ProductService>();
             builder.Services.AddScoped<ProductImageService, ProductImageService>();
             builder.Services.AddScoped<IDeliveryService, DeliveryService>();
             builder.Services.AddScoped<WishistService, WishistService>();

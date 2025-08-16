@@ -24,7 +24,7 @@ namespace Bikya.Services.Interfaces
         Task<ApiResponse<UserStatsDTO>> GetUserStatsAsync(int userId);
         Task<ApiResponse<bool>> IsVipSellerAsync(int sellerId);
 
-        Task<ApiResponse<PublicUserProfileDto>> GetPublicUserProfileAsync(int userId);
+        Task<ApiResponse<PublicUserProfileDto>> GetPublicUserProfileAsync(int userId,int? currentUserId);
         Task<ApiResponse<string>> UploadProfileImageAsync(int userId, IFormFile imageFile);
 
 

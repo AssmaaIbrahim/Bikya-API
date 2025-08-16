@@ -1,4 +1,5 @@
-﻿using Bikya.DTOs.ShippingDTOs;
+﻿using Bikya.Data.Models;
+using Bikya.DTOs.ShippingDTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,9 @@ namespace Bikya.DTOs.Orderdto
 
         public int ProductId { get; set; }
         public string ProductTitle { get; set; }
+        public IEnumerable<ProductImage>? ProductImages { get; set; } = null;
+        public bool NeedReview { get; set; } = false; // default false
+
 
         public int BuyerId { get; set; }
         public string BuyerName { get; set; }

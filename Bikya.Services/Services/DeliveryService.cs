@@ -8,6 +8,8 @@ using Bikya.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Data;
+using System.Threading;
 
 namespace Bikya.Services.Services
 {
@@ -17,6 +19,8 @@ namespace Bikya.Services.Services
         private readonly RoleManager<ApplicationRole> _roleManager;
         private readonly IJwtService _jwtService;
         private readonly IOrderRepository _orderRepository;
+        private readonly IProductRepository _productRepository;
+
         private readonly ILogger<DeliveryService> _logger;
 
         public DeliveryService(
@@ -24,12 +28,14 @@ namespace Bikya.Services.Services
             RoleManager<ApplicationRole> roleManager,
             IJwtService jwtService,
             IOrderRepository orderRepository,
+            IProductRepository productRepository,
             ILogger<DeliveryService> logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _jwtService = jwtService;
             _orderRepository = orderRepository;
+            _productRepository = productRepository;
             _logger = logger;
         }
 
@@ -368,7 +374,14 @@ namespace Bikya.Services.Services
 
                 // Save changes to database
                 await _orderRepository.UpdateAsync(order);
-                
+                if (updateDto.Status == OrderStatus.Completed)
+                {
+                    order.Product.Status = ProductStatus.Sold;
+                    _productRepository.Update(order.Product);
+                    await _productRepository.SaveChangesAsync();
+                }
+
+
                 _logger.LogInformation("Order {OrderId} status updated successfully to {NewStatus}", orderId, updateDto.Status);
                 return ApiResponse<bool>.SuccessResponse(true, "Order status updated successfully");
             }

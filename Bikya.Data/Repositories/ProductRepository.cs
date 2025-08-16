@@ -1,4 +1,5 @@
-﻿using Bikya.Data.Models;
+﻿using Bikya.Data.Enums;
+using Bikya.Data.Models;
 using Bikya.Data.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -61,14 +62,14 @@ namespace Bikya.Data.Repositories
         public async Task<IEnumerable<Product>> GetApprovedProductsByUserAsync(int userId, CancellationToken cancellationToken = default)
         {
             return await GetProductsWithImagesQuery()
-                .Where(p => p.UserId == userId && p.IsApproved)
+                .Where(p => p.UserId == userId && p.IsApproved && p.Status == Enums.ProductStatus.Available)
                 .ToListAsync(cancellationToken);
         }
 
         public async Task<IEnumerable<Product>> GetProductsByCategoryAsync(int categoryId, CancellationToken cancellationToken = default)
         {
             return await GetProductsWithImagesQuery()
-                .Where(p => p.CategoryId == categoryId && p.IsApproved)
+                .Where(p => p.CategoryId == categoryId && p.IsApproved && p.Status == Enums.ProductStatus.Available)
                 .ToListAsync(cancellationToken);
         }
 
@@ -128,7 +129,18 @@ namespace Bikya.Data.Repositories
                 await SaveChangesAsync(cancellationToken);
             }
         }
+        public async Task updateStatus(int productId, ProductStatus productStatus, CancellationToken cancellationToken = default)
+        {
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.Id == productId, cancellationToken);
 
+            if (product != null)
+            {
+                product.Status = productStatus;
+                Update(product);
+                await SaveChangesAsync(cancellationToken);
+            }
+        }
         #endregion
 
         #region Private Helper Methods

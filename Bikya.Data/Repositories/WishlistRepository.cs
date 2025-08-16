@@ -72,7 +72,18 @@ namespace Bikya.Data.Repositories
                 .Select(w => w.ProductId).ToListAsync(cancellationToken);
              return new HashSet<int>(ids);
         }
+        public async Task RemoveProductFromAllWishlistsAsync(int productId, CancellationToken cancellationToken = default)
+        {
+            var wishlists = await _context.WishLists
+                .Where(w => w.ProductId == productId)
+                .ToListAsync();
 
+            if (wishlists.Any())
+            {
+                _context.WishLists.RemoveRange(wishlists);
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }
 

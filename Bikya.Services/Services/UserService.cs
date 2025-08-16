@@ -6,6 +6,7 @@ using Bikya.DTOs.ProductDTO;
 using Bikya.DTOs.ReviewDTOs;
 using Bikya.DTOs.UserDTOs;
 using Bikya.Services.Interfaces;
+using Bikya.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -14,6 +15,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+
 
 namespace Bikya.Services.Services
 {
@@ -28,18 +30,18 @@ namespace Bikya.Services.Services
 
         private readonly IUserRepository _userRepository;
         private readonly IReviewRepository _reviewRepository;
-        private readonly IProductRepository _productRepository;
+        private readonly IProductService _productService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         public UserService(
         IUserRepository userRepository,
         IReviewRepository reviewRepository,
-        IProductRepository productRepository,
+        IProductService productService,
         IWebHostEnvironment env,
         IHttpContextAccessor httpContextAccessor)
         {
             _userRepository = userRepository;
             _reviewRepository = reviewRepository;
-            _productRepository = productRepository;
+            _productService = productService;
             _env = env;
             _httpContextAccessor = httpContextAccessor;
         }
@@ -193,7 +195,7 @@ namespace Bikya.Services.Services
             return ApiResponse<bool>.SuccessResponse(false, "Seller is not VIP.");
         }
 
-        public async Task<ApiResponse<PublicUserProfileDto>> GetPublicUserProfileAsync(int userId)
+        public async Task<ApiResponse<PublicUserProfileDto>> GetPublicUserProfileAsync(int userId,int?currentUserId)
         {
             // 1. Get user
             var user = await _userRepository.GetUserWithDetailsAsync(userId);
@@ -209,7 +211,7 @@ namespace Bikya.Services.Services
             var reviews = await _reviewRepository.GetReviewsBySellerIdAsync(userId);
 
             // 4. Get products
-            var products = await _productRepository.GetApprovedProductsByUserAsync(userId);
+            var products = await _productService.GetApprovedProductsByUserAsync(userId,currentUserId);
 
             // 5. Map to DTO
             var profileDto = new PublicUserProfileDto
@@ -228,18 +230,7 @@ namespace Bikya.Services.Services
                     CreatedAt = r.CreatedAt
                 }).ToList(),
 
-                ProductsForSale = products.Select(p => new GetProductDTO
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Images = p.Images.Select(img => new GetProductImageDTO
-                    {
-                        Id = img.Id,
-                        ImageUrl = img.ImageUrl,
-                        IsMain = img.IsMain
-                    }).ToList(),
-                    Price = p.Price
-                }).ToList()
+                ProductsForSale = products.ToList()
 
 
             };

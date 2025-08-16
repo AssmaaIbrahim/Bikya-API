@@ -17,6 +17,7 @@ namespace Bikya.Data.Repositories.Interfaces
 
         Task<List<Order>> GetAllOrdersWithRelationsAsync(CancellationToken cancellationToken = default);
 
+        Task<List<Order>> GetOrdersNeedingReviewAsync(int userId,CancellationToken cancellationToken = default);
         Task<bool> CanUserCancelOrderAsync(int orderId, int buyerId, CancellationToken cancellationToken = default);
 
         Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus newStatus, CancellationToken cancellationToken = default);

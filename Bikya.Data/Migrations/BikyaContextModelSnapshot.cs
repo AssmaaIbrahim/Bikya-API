@@ -180,7 +180,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("ParentCategoryId");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.ChatBotFaq", b =>
@@ -201,7 +201,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChatBotFaqs");
+                    b.ToTable("ChatBotFaqs", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.ChatMessage", b =>
@@ -225,7 +225,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChatMessages");
+                    b.ToTable("ChatMessages", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.ExchangeRequest", b =>
@@ -301,7 +301,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ExchangeRequests");
+                    b.ToTable("ExchangeRequests", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.ExchangeStatusHistory", b =>
@@ -335,7 +335,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("ExchangeRequestId");
 
-                    b.ToTable("ExchangeStatusHistories");
+                    b.ToTable("ExchangeStatusHistories", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Order", b =>
@@ -393,7 +393,7 @@ namespace Bikya.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("UX_Orders_Product_Buyer");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Payment", b =>
@@ -435,7 +435,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("OrderId");
 
-                    b.ToTable("Payments");
+                    b.ToTable("Payments", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Product", b =>
@@ -495,7 +495,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.ProductImage", b =>
@@ -526,7 +526,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("ProductImages");
+                    b.ToTable("ProductImages", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Review", b =>
@@ -566,7 +566,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("SellerId");
 
-                    b.ToTable("Reviews");
+                    b.ToTable("Reviews", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.ShippingInfo", b =>
@@ -627,7 +627,7 @@ namespace Bikya.Data.Migrations
                     b.HasIndex("OrderId")
                         .IsUnique();
 
-                    b.ToTable("ShippingInfos");
+                    b.ToTable("ShippingInfos", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.Transaction", b =>
@@ -666,7 +666,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("PaymentId");
 
-                    b.ToTable("Transactions");
+                    b.ToTable("Transactions", (string)null);
                 });
 
             modelBuilder.Entity("Bikya.Data.Models.WishList", b =>
@@ -694,7 +694,7 @@ namespace Bikya.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("WishLists");
+                    b.ToTable("WishLists", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
