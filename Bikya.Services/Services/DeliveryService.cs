@@ -3,6 +3,7 @@ using Bikya.Data.Models;
 using Bikya.Data.Repositories.Interfaces;
 using Bikya.Data.Response;
 using Bikya.DTOs.AuthDTOs;
+using Bikya.DTOs.UserDTOs;
 using Bikya.DTOs.DeliveryDTOs;
 using Bikya.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
@@ -98,7 +99,7 @@ namespace Bikya.Services.Services
 
                 var deliveryOrders = new List<DeliveryOrderDto>();
                 var processedOrderIds = new HashSet<int>();
-
+          
                 foreach (var order in filteredOrders)
                 {
                     // Skip if already processed as part of an exchange group
@@ -109,72 +110,78 @@ namespace Bikya.Services.Services
                     {
                         Id = order.Id,
                         ProductName = order.Product?.Title ?? "Unknown Product",
-                        ProductImage = order.Product?.Images?.FirstOrDefault()?.ImageUrl ?? "",
+                        ProductId = order.ProductId,
                         TotalAmount = order.TotalAmount,
                         Status = order.Status,
                         CreatedAt = order.CreatedAt,
                         PaidAt = order.PaidAt,
-                        RecipientName = order.ShippingInfo?.RecipientName ?? order.Buyer?.FullName ?? "",
-                        Address = order.ShippingInfo?.Address ?? order.Buyer?.Address ?? "",
-                        City = order.ShippingInfo?.City ?? "",
-                        PostalCode = order.ShippingInfo?.PostalCode ?? "",
-                        PhoneNumber = order.ShippingInfo?.PhoneNumber ?? order.Buyer?.PhoneNumber ?? "",
+                        BuyerInfo = new UserAddressInfoDto
+                        {
+                            Id=order.BuyerId,
+                            FullName=order.ShippingInfo?.RecipientName ?? order.Buyer?.FullName ?? "",
+                            Email= order.Buyer?.Email ?? "",
+                            Address=order.ShippingInfo?.Address ?? order.Buyer?.Address ?? "",
+                            PhoneNumber= order.Buyer?.PhoneNumber ?? "",
+                            PostalCode=order.Buyer?.PostalCode ?? "",
+                            City=order.Buyer?.City??""
+                        },
+                        SellerInfo = new UserAddressInfoDto
+                        {
+                            Id=order.SellerId,
+                            FullName=order.ShippingInfo?.RecipientName ?? order.Seller?.FullName ?? "",
+                            Email= order.Seller?.Email ?? "",
+                            Address=order.ShippingInfo?.Address ?? order.Seller?.Address ?? "",
+                            PhoneNumber= order.Seller?.PhoneNumber ?? "",
+                            PostalCode=order.Seller?.PostalCode ?? "",
+                            City=order.Seller?.City??""
+                        },
                         ShippingStatus = order.ShippingInfo?.Status ?? ShippingStatus.Pending,
-                        BuyerName = order.Buyer?.FullName ?? "",
-                        BuyerEmail = order.Buyer?.Email ?? "",
-                        BuyerPhone = order.Buyer?.PhoneNumber ?? "",
-                        IsSwapOrder = order.IsSwapOrder
-                    };
+                        IsSwapOrder = order.IsSwapOrder,
                     
+                    };
+
                     // Check if this is a swap order and find related order
                     if (order.IsSwapOrder)
                     {
+
                         // Find the related order in the same exchange
-                        var relatedOrder = filteredOrders.FirstOrDefault(o => 
-                            o.Id != order.Id && 
-                            o.IsSwapOrder && 
-                            o.ProductId != order.ProductId &&
-                            o.CreatedAt.Date == order.CreatedAt.Date && // Same day exchange
-                            Math.Abs((o.CreatedAt - order.CreatedAt).TotalMinutes) <= 5); // Within 5 minutes
-                        
-                        if (relatedOrder != null)
+                        //var relatedOrder = filteredOrders.FirstOrDefault(o =>
+                        //    o.Id != order.Id &&
+                        //    o.IsSwapOrder &&
+                        //    o.ProductId != order.ProductId &&
+                        //    o.CreatedAt.Date == order.CreatedAt.Date && // Same day exchange
+                        //    Math.Abs((o.CreatedAt - order.CreatedAt).TotalMinutes) <= 5); // Within 5 minutes
+                        var request = await _exchangeRequestRepository.GetByOrderIdAsync(order.Id);
+                        if (request != null)
                         {
-                            deliveryOrder.RelatedOrderId = relatedOrder.Id;
-                            deliveryOrder.ExchangeInfo = $"تبادل مع طلب #{relatedOrder.Id} - {relatedOrder.Product?.Title ?? "Unknown Product"}";
-                            
-                            // Mark both orders as processed
-                            processedOrderIds.Add(order.Id);
-                            processedOrderIds.Add(relatedOrder.Id);
-                            
-                            // Create a combined delivery order for the exchange
-                            var combinedDeliveryOrder = new DeliveryOrderDto
+                            var relatedOrderId = request.OrderForOfferedProductId == order.Id
+                                ? request.OrderForRequestedProductId
+                                : request.OrderForOfferedProductId;
+
+                            var relatedOrder = await _orderRepository.GetOrderWithShippingInfoAsync(relatedOrderId.Value);
+
+
+                            if (relatedOrder != null)
                             {
-                                Id = order.Id,
-                                ProductName = $"تبادل: {order.Product?.Title ?? "Unknown Product"} ↔ {relatedOrder.Product?.Title ?? "Unknown Product"}",
-                                ProductImage = order.Product?.Images?.FirstOrDefault()?.ImageUrl ?? "",
-                                TotalAmount = order.TotalAmount + relatedOrder.TotalAmount,
-                                Status = order.Status,
-                                CreatedAt = order.CreatedAt,
-                                PaidAt = order.PaidAt,
-                                RecipientName = "تبادل منتجات",
-                                Address = "تبادل منتجات",
-                                City = "تبادل منتجات",
-                                PostalCode = "00000",
-                                PhoneNumber = "0000000000",
-                                ShippingStatus = ShippingStatus.Pending,
-                                BuyerName = "تبادل منتجات",
-                                BuyerEmail = "exchange@bikya.com",
-                                BuyerPhone = "0000000000",
-                                IsSwapOrder = true,
-                                RelatedOrderId = relatedOrder.Id,
-                                ExchangeInfo = $"تبادل: {order.Product?.Title ?? "Unknown Product"} مع {relatedOrder.Product?.Title ?? "Unknown Product"}"
-                            };
-                            
-                            deliveryOrders.Add(combinedDeliveryOrder);
-                            continue; // Skip adding the individual order
+                                deliveryOrder.RelatedOrderId = relatedOrder.Id;
+                                deliveryOrder.ExchangeInfo = $"تبادل مع طلب #{relatedOrder.Id} - {relatedOrder.Product?.Title ?? "Unknown Product"}";
+                                deliveryOrder.RelatedProductId = relatedOrder.ProductId;
+                                deliveryOrder.RelatedProductTitle = relatedOrder.Product.Title;
+
+                                if (order.Status == OrderStatus.Pending || relatedOrder.Status == OrderStatus.Pending)
+                                    continue;
+
+                                // Mark both orders as processed
+                                processedOrderIds.Add(order.Id);
+                                processedOrderIds.Add(relatedOrder.Id);
+
+                                deliveryOrders.Add(deliveryOrder);
+                                continue; // Skip adding the individual order
+                            }
                         }
                     }
-                    
+
+
                     deliveryOrders.Add(deliveryOrder);
                     processedOrderIds.Add(order.Id);
                 }
@@ -203,21 +210,35 @@ namespace Bikya.Services.Services
                 {
                     Id = order.Id,
                     ProductName = order.Product?.Title ?? "Unknown Product",
-                    ProductImage = order.Product?.Images?.FirstOrDefault()?.ImageUrl ?? "",
+                    ProductId = order.ProductId,
                     TotalAmount = order.TotalAmount,
                     Status = order.Status,
                     CreatedAt = order.CreatedAt,
                     PaidAt = order.PaidAt,
-                    RecipientName = order.ShippingInfo?.RecipientName ?? "",
-                    Address = order.ShippingInfo?.Address ?? "",
-                    City = order.ShippingInfo?.City ?? "",
-                    PostalCode = order.ShippingInfo?.PostalCode ?? "",
-                    PhoneNumber = order.ShippingInfo?.PhoneNumber ?? "",
+                    BuyerInfo = new UserAddressInfoDto
+                    {
+                            Id=order.BuyerId,
+                            FullName=order.Buyer?.FullName ?? "",
+                            Email= order.Buyer?.Email ?? "",
+                            Address= order.Buyer?.Address ?? "",
+                            PhoneNumber= order.Buyer?.PhoneNumber ?? "",
+                            PostalCode=order.Buyer?.PostalCode ?? "",
+                            City=order.Buyer?.City??""
+                        },
+                    SellerInfo = new UserAddressInfoDto
+                    {
+                            Id=order.SellerId,
+                            FullName= order.Seller?.FullName ?? "",
+                            Email= order.Seller?.Email ?? "",
+                            Address= order.Seller?.Address ?? "",
+                            PhoneNumber= order.Seller?.PhoneNumber ?? "",
+                            PostalCode=order.Seller?.PostalCode ?? "",
+                            City=order.Seller?.City??""
+                        },
                     ShippingStatus = order.ShippingInfo?.Status ?? ShippingStatus.Pending,
-                    BuyerName = order.Buyer?.FullName ?? "",
-                    BuyerEmail = order.Buyer?.Email ?? "",
-                    BuyerPhone = order.Buyer?.PhoneNumber ?? "",
-                    IsSwapOrder = order.IsSwapOrder
+                   
+                    IsSwapOrder = order.IsSwapOrder,
+                    
                 };
                 
                 // Check if this is a swap order and find related order
@@ -225,20 +246,32 @@ namespace Bikya.Services.Services
                 {
                     // Find the related order in the same exchange
                     var allOrders = await _orderRepository.GetAllOrdersWithRelationsAsync();
-                    var relatedOrder = allOrders.FirstOrDefault(o => 
-                        o.Id != order.Id && 
-                        o.IsSwapOrder && 
-                        o.ProductId != order.ProductId &&
-                        o.CreatedAt.Date == order.CreatedAt.Date && // Same day exchange
-                        Math.Abs((o.CreatedAt - order.CreatedAt).TotalMinutes) <= 5); // Within 5 minutes
-                    
-                    if (relatedOrder != null)
+                    //var relatedOrder = allOrders.FirstOrDefault(o => 
+                    //    o.Id != order.Id && 
+                    //    o.IsSwapOrder && 
+                    //    o.ProductId != order.ProductId &&
+                    //    o.CreatedAt.Date == order.CreatedAt.Date && // Same day exchange
+                    //    Math.Abs((o.CreatedAt - order.CreatedAt).TotalMinutes) <= 5); // Within 5 minutes
+
+                    var request = await _exchangeRequestRepository.GetByOrderIdAsync(order.Id);
+                    if (request != null)
                     {
-                        deliveryOrder.RelatedOrderId = relatedOrder.Id;
-                        deliveryOrder.ExchangeInfo = $"تبادل مع طلب #{relatedOrder.Id} - {relatedOrder.Product?.Title ?? "Unknown Product"}";
-                        
-                        // Update product name to show it's an exchange
-                        deliveryOrder.ProductName = $"تبادل: {order.Product?.Title ?? "Unknown Product"} ↔ {relatedOrder.Product?.Title ?? "Unknown Product"}";
+                        var relatedOrderId = request.OrderForOfferedProductId == order.Id
+                            ? request.OrderForRequestedProductId
+                            : request.OrderForOfferedProductId;
+
+                        var relatedOrder = await _orderRepository.GetOrderWithShippingInfoAsync(relatedOrderId.Value);
+
+
+                        if (relatedOrder != null)
+                        {
+                            deliveryOrder.RelatedOrderId = relatedOrder.Id;
+                            deliveryOrder.ExchangeInfo = $"تبادل مع طلب #{relatedOrder.Id} - {relatedOrder.Product?.Title ?? "Unknown Product"}";
+                            deliveryOrder.RelatedProductId = relatedOrder.ProductId;
+                            deliveryOrder.RelatedProductTitle = relatedOrder.Product.Title;
+                            // Update product name to show it's an exchange
+                            //deliveryOrder.ProductName = $"تبادل: {order.Product?.Title ?? "Unknown Product"} ↔ {relatedOrder.Product?.Title ?? "Unknown Product"}";
+                        }
                     }
                 }
 
@@ -471,6 +504,9 @@ namespace Bikya.Services.Services
                     Email = "delivery@bikya.com",
                     FullName = "Delivery Personnel",
                     PhoneNumber = "1234567890",
+                    Address="Unknown",
+                    City="UnKnown",
+                    PostalCode="UnKnown",
                     IsVerified = true,
                     EmailConfirmed = true
                 };

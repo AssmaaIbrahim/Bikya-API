@@ -263,6 +263,13 @@ namespace Bikya.API.Areas.Identity.Controllers
             var response = await _userService.UploadProfileImageAsync(userId, imageFile);
             return StatusCode(response.StatusCode, response);
         }
+        [HttpGet("User-info/{userId}")]
+        //[Authorize('Delevery')]
+        public async Task<IActionResult> GetUserAddressInfo(int userId)
+        {
 
+            var response = await _userService.GetUserAddressInfo(userId);
+            return StatusCode(response.StatusCode, response);
+        }
     }
 }

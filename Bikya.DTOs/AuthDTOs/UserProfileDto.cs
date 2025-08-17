@@ -12,8 +12,14 @@ namespace Bikya.DTOs.AuthDTOs
         public string Email { get; set; } = string.Empty;
         public string UserName { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
-        public string? Address { get; set; }
-        public string? PhoneNumber { get; set; }
+
+
+        public string Address { get; set; } // Required string
+        public string City { get; set; } // Required string
+        public string PostalCode { get; set; } // Required string
+        public string PhoneNumber { get; set; } // Required string
+
+
         public string? ProfileImageUrl { get; set; }
         public bool IsVerified { get; set; }
         public double? SellerRating { get; set; } 

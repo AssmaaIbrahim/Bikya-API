@@ -1,4 +1,5 @@
 using Bikya.Data.Enums;
+using Bikya.DTOs.UserDTOs;
 
 namespace Bikya.DTOs.DeliveryDTOs
 {
@@ -6,28 +7,28 @@ namespace Bikya.DTOs.DeliveryDTOs
     {
         public int Id { get; set; }
         public string ProductName { get; set; }
-        public string ProductImage { get; set; }
+        public int ProductId { get; set; }
         public decimal TotalAmount { get; set; }
         public OrderStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? PaidAt { get; set; }
         
-        // Shipping Information
-        public string RecipientName { get; set; }
-        public string Address { get; set; }
-        public string City { get; set; }
-        public string PostalCode { get; set; }
-        public string PhoneNumber { get; set; }
+
+
+        //buyer info
+        public UserAddressInfoDto BuyerInfo { get; set; }
+        public UserAddressInfoDto SellerInfo { get; set; }
+
+
         public ShippingStatus ShippingStatus { get; set; }
-        
-        // Customer Information
-        public string BuyerName { get; set; }
-        public string BuyerEmail { get; set; }
-        public string BuyerPhone { get; set; }
-        
+
+      
+
         // Exchange Order Linking
         public bool IsSwapOrder { get; set; }
         public int? RelatedOrderId { get; set; }
+        public int? RelatedProductId { get; set; }
+        public string? RelatedProductTitle { get; set; }
         public string ExchangeInfo { get; set; } = "";
     }
 }

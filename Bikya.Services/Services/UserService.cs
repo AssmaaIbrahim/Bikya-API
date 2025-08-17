@@ -128,8 +128,12 @@ namespace Bikya.Services.Services
                 FullName = user.FullName,
                 Email = user.Email,
                 UserName = user.UserName,
+
                 Address = user.Address,
+                PostalCode = user.PostalCode,
+                City = user.City,
                 PhoneNumber = user.PhoneNumber,
+
                 SellerRating = user.SellerRating,
                 ProfileImageUrl = user.ProfileImageUrl,
                 IsVerified = user.IsVerified,
@@ -153,6 +157,9 @@ namespace Bikya.Services.Services
             user.ProfileImageUrl = dto.ProfileImageUrl ?? user.ProfileImageUrl;
             user.Address = dto.Address ?? user.Address;
             user.PhoneNumber = dto.PhoneNumber ?? user.PhoneNumber;
+            user.City = dto.City ?? user.City;
+            user.PostalCode = dto.PostalCode ?? user.PostalCode;
+
 
             var result = await _userRepository.UpdateUserAsync(user);
             if (!result.Succeeded)
@@ -289,6 +296,24 @@ namespace Bikya.Services.Services
         }
 
 
+        public async Task<ApiResponse<UserAddressInfoDto>> GetUserAddressInfo(int id)
+        {
+            var user = await GetUserOrErrorAsync(id);
+            if (user == null)
+                return ApiResponse<UserAddressInfoDto>.ErrorResponse(UserNotFoundMessage, 404);
 
+            return ApiResponse<UserAddressInfoDto>.SuccessResponse(new UserAddressInfoDto
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                Address= user.Address,
+                PostalCode = user.PostalCode,
+                City = user.City,
+                PhoneNumber = user.PhoneNumber,
+
+             
+            });
+        }
     }
 }

@@ -26,7 +26,7 @@ namespace Bikya.Services.Interfaces
 
         Task<ApiResponse<PublicUserProfileDto>> GetPublicUserProfileAsync(int userId,int? currentUserId);
         Task<ApiResponse<string>> UploadProfileImageAsync(int userId, IFormFile imageFile);
-
+        Task<ApiResponse<UserAddressInfoDto>> GetUserAddressInfo(int id);
 
     }
 }

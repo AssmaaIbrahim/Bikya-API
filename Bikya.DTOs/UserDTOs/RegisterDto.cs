@@ -17,8 +17,24 @@ namespace Bikya.DTOs.UserDTOs
         [EmailAddress(ErrorMessage = "Invalid email format.")]
         public string Email { get; set; } = string.Empty;
 
-        [Phone(ErrorMessage = "Invalid phone number format.")]
-        public string? PhoneNumber { get; set; }
+       
+        [Required(ErrorMessage = "Address is required.")]
+        [StringLength(200, ErrorMessage = "Address must be less than 200 characters.")]
+        public string Address { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "City is required.")]
+        [StringLength(100, ErrorMessage = "City must be less than 100 characters.")]
+        public string City { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Postal code is required.")]
+        [StringLength(20, ErrorMessage = "Postal code must be less than 20 characters.")]
+        public string PostalCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Phone number is required.")]
+        [RegularExpression(@"^\d{11}$", ErrorMessage = "Phone number must contain exactly 11 digits.")]
+        public string PhoneNumber { get; set; } = string.Empty;
+
+
 
         [Required(ErrorMessage = "Password is required.")]
         [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between 6 and 100 characters.")]

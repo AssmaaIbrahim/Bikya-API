@@ -320,6 +320,9 @@ namespace Bikya.API.Areas.Identity.Controllers
                     UserName = dto.Email,
                     Email = dto.Email,
                     FullName = dto.FullName,
+                    Address=dto.Address,
+                    City=dto.City,
+                    PostalCode=dto.PostalCode,
                     PhoneNumber = dto.PhoneNumber,
                     EmailConfirmed = true, // Skip email verification for testing
                     IsVerified = false

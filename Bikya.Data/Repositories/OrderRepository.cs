@@ -23,7 +23,7 @@ namespace Bikya.Data.Repositories
             {
                 return await _context.Orders
                     .AsNoTracking()
-                    .Include(o => o.Product)
+                    .Include(o => o.Product).ThenInclude(p=>p.Images)
                     .Include(o => o.Buyer)
                     .Include(o => o.Seller)
                     .Include(o => o.ShippingInfo)
@@ -43,6 +43,7 @@ namespace Bikya.Data.Repositories
             {
                 return await _context.Orders
                     .Include(o => o.ShippingInfo)
+                   .Include(o=>o.Product).ThenInclude(p=>p.Images)
                     .FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
             }
             catch (Exception ex)
