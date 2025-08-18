@@ -38,5 +38,30 @@ namespace Bikya.Data.Repositories.Interfaces
         /// Gets all orders for a specific product
         /// </summary>
         Task<List<Order>> GetOrdersByProductIdAsync(int productId, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets total sales (sum of TotalAmount) from all orders
+        /// </summary>
+        Task<decimal> GetTotalSalesAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets total number of orders
+        /// </summary>
+        Task<int> GetTotalOrdersAsync(CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets total sales for a specific date range
+        /// </summary>
+        Task<decimal> GetTotalSalesByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets total orders for a specific date range
+        /// </summary>
+        Task<int> GetTotalOrdersByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Gets orders count by status and date range
+        /// </summary>
+        Task<int> GetOrdersCountByStatusAndDateRangeAsync(OrderStatus status, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default);
     }
 }

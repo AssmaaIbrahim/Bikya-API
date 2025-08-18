@@ -212,14 +212,14 @@ namespace Bikya.Services.Services
                 else
                 {
                     _logger.LogInformation("Processing regular order for product {ProductId} with price {Price}", product.Id, product.Price);
-                    
+
                     // For regular orders:
                     // - Total amount is product price + shipping fee
                     // - Platform fee is 5% of product price
                     // - Seller gets 95% of product price + full shipping fee
                     totalAmount = product.Price + shippingFee;
-                    platformFee = product.Price * 0.05m;
-                    sellerAmount = (product.Price * 0.95m) + shippingFee;
+                    platformFee = totalAmount * 0.15m;
+                    sellerAmount = totalAmount * 0.85m;
                 }
 
                 // Sanitize and clamp fields to comply with DB constraints

@@ -302,9 +302,8 @@ namespace Bikya.Data.Repositories
         {
             try
             {
-                entity.CreatedAt = DateTime.UtcNow;
-                entity.Status = OrderStatus.Pending;
                 await base.AddAsync(entity, cancellationToken);
+                _logger.LogInformation("Order {OrderId} added successfully", entity.Id);
             }
             catch (Exception ex)
             {
@@ -349,6 +348,84 @@ namespace Bikya.Data.Repositories
                 throw;
             }
 
+        }
+
+        public async Task<decimal> GetTotalSalesAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.Orders
+                    .AsNoTracking()
+                    .SumAsync(o => o.TotalAmount, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating total sales");
+                throw;
+            }
+        }
+
+        public async Task<int> GetTotalOrdersAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.Orders
+                    .AsNoTracking()
+                    .CountAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error counting total orders");
+                throw;
+            }
+        }
+
+        public async Task<decimal> GetTotalSalesByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.Orders
+                    .AsNoTracking()
+                    .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
+                    .SumAsync(o => o.TotalAmount, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error calculating total sales for date range {StartDate} to {EndDate}", startDate, endDate);
+                throw;
+            }
+        }
+
+        public async Task<int> GetTotalOrdersByDateRangeAsync(DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.Orders
+                    .AsNoTracking()
+                    .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
+                    .CountAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error counting total orders for date range {StartDate} to {EndDate}", startDate, endDate);
+                throw;
+            }
+        }
+
+        public async Task<int> GetOrdersCountByStatusAndDateRangeAsync(OrderStatus status, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _context.Orders
+                    .AsNoTracking()
+                    .Where(o => o.Status == status && o.CreatedAt >= startDate && o.CreatedAt <= endDate)
+                    .CountAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error counting orders by status {Status} for date range {StartDate} to {EndDate}", status, startDate, endDate);
+                throw;
+            }
         }
     }
 }

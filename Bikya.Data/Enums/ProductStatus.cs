@@ -8,9 +8,10 @@ namespace Bikya.Data.Enums
 {
     public enum ProductStatus
     {
-        Available  ,   
-        InProcess ,   
+        Available,   
+        InProcess,   
         Trading,     // exchanged
-        Sold        // sold
+        Traded,      // traded (for backward compatibility)
+        Sold         // sold
     }
 }

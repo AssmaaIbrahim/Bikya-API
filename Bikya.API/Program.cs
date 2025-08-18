@@ -74,6 +74,7 @@ namespace Bikya
             builder.Services.AddScoped<IDeliveryService, DeliveryService>();
             builder.Services.AddScoped<WishistService, WishistService>();
             builder.Services.AddScoped<IChatBotService, ChatBotService>();
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 
             builder.Services.AddHttpContextAccessor();
