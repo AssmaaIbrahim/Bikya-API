@@ -168,13 +168,6 @@ namespace Bikya
                           .AllowAnyMethod();
                 });
                 
-                // Add a more permissive policy for development
-                options.AddPolicy("AllowAll", policy =>
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
-                });
             });
 
             #endregion
@@ -244,14 +237,10 @@ namespace Bikya
             app.UseAuthorization();
             
             // Use CORS based on environment
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseCors("AllowAll");
-            }
-            else
-            {
-                app.UseCors("AllowSpecificOrigin");
-            }
+           
+            app.UseCors("AllowAll");
+            
+          
             
             app.UseStaticFiles();
 
