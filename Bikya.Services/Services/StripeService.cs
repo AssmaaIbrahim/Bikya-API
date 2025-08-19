@@ -43,8 +43,8 @@ public class StripeService : IStripeService
             }
         },
             Mode = "payment",
-            SuccessUrl = $"http://localhost:4200/payment/success?session_id={{CHECKOUT_SESSION_ID}}",  // ✅ Angular localhost port
-            CancelUrl = $"http://localhost:4200/payment/cancel",
+            SuccessUrl = $"https://bikya-frontend-vokz.vercel.app/payment/success?session_id={{CHECKOUT_SESSION_ID}}",  // ✅ Angular localhost port
+            CancelUrl = $"https://bikya-frontend-vokz.vercel.app/payment/cancel",
             Metadata = new Dictionary<string, string>
         {
             { "order_id", orderId.ToString() }
