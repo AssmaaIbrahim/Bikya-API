@@ -25,8 +25,9 @@ namespace Bikya.Data
         public DbSet<ExchangeStatusHistory> ExchangeStatusHistories { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<WishList> WishLists { get; set; }
-        public DbSet<ChatBotFaq> ChatBotFaqs { get; set; }
-        public DbSet<ChatMessage> ChatMessages { get; set; }
+        public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
+        public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+        public DbSet<FAQ> FAQs => Set<FAQ>();
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new UserConfiguration());
@@ -42,6 +43,7 @@ namespace Bikya.Data
             modelBuilder.ApplyConfiguration(new ExchangeStatusHistoryConfiguration());
             modelBuilder.ApplyConfiguration(new PaymentConfiguration());
             modelBuilder.ApplyConfiguration(new WishlistConfiguration());
+            modelBuilder.ApplyConfiguration(new ChatMessageConfiguration());
 
 
             base.OnModelCreating(modelBuilder);

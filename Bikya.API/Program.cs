@@ -5,6 +5,7 @@ using Bikya.Data.Repositories;
 using Bikya.Data.Repositories.Interfaces;
 using Bikya.DTOs.StripeDTOs;
 using Bikya.Services.Interfaces;
+using Bikya.Services.Providers;
 using Bikya.Services.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
@@ -59,8 +60,6 @@ namespace Bikya
             builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
             builder.Services.AddScoped<IShippingServiceRepository, ShippingServiceRepository>();
             builder.Services.AddScoped<IWishlistRepository, WishlistRepository>();
-            builder.Services.AddScoped<IChatBotFaqRepository, ChatBotFaqRepository>();
-            builder.Services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
 
             // Register Business Services
             builder.Services.AddScoped<IPaymentService, PaymentService>();
@@ -73,8 +72,9 @@ namespace Bikya
             builder.Services.AddScoped<ProductImageService, ProductImageService>();
             builder.Services.AddScoped<IDeliveryService, DeliveryService>();
             builder.Services.AddScoped<WishistService, WishistService>();
-            builder.Services.AddScoped<IChatBotService, ChatBotService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<ChatOrchestrator>();
+            builder.Services.AddScoped<ChatService>();
 
 
             builder.Services.AddHttpContextAccessor();
@@ -82,6 +82,17 @@ namespace Bikya
             builder.Services.AddScoped<IStripeService, StripeService>();
             builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
             builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+            // في مشروع الـ API الرئيسي
+            builder.Services.AddSingleton<IAIProvider, OpenRouterProvider>();
+            builder.Services.AddHttpClient<OpenRouterProvider>();
+
+            // لو الـ Provider موجود في مشروع Library
+            builder.Services.AddSingleton<IAIProvider>(sp =>
+            {
+                var http = sp.GetRequiredService<HttpClient>();
+                var cfg = sp.GetRequiredService<IConfiguration>();
+                return new OpenRouterProvider(http, cfg);
+            });
 
             // Configure Identity
             builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
@@ -234,12 +245,7 @@ namespace Bikya
             });
 
             var app = builder.Build();
-            //chatbot seeding
-            using (var scope = app.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<BikyaContext>();
-                 await SeedChatBotData.SeedAsync(dbContext); // ✅ now allowed
-            }
+          
 
             // Use Global Exception Handler
             app.UseMiddleware<GlobalExceptionHandler>();
@@ -247,7 +253,7 @@ namespace Bikya
             // Seed roles
             using (var scope = app.Services.CreateScope())
             {
-               SeedRoles(scope.ServiceProvider).Wait();
+                SeedRoles(scope.ServiceProvider).Wait();
             }
 
             if (app.Environment.IsDevelopment())

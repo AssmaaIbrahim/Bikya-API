@@ -23,6 +23,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="8.0.0" />
     <PackageReference Include="MimeKit" Version="4.13.0" />
+    <PackageReference Include="Mscc.GenerativeAI.Google" Version="2.7.0" />
+    <PackageReference Include="OpenAI" Version="2.3.0" />
     <PackageReference Include="ServiceStack.Stripe.Core" Version="8.8.0" />
     <PackageReference Include="Stripe.net" Version="48.3.0" />
   </ItemGroup>
