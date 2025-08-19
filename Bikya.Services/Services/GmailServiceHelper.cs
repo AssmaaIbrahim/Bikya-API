@@ -17,29 +17,25 @@ namespace Bikya.Services.Services
         private static readonly string[] Scopes = { GmailService.Scope.GmailSend };
         private static readonly string ApplicationName = "Bikya Mailer";
 
-        public static async Task<GmailService> GetGmailServiceAsync()
-        {
-            var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
-            if (string.IsNullOrEmpty(credentialsJson))
-            {
-             throw new InvalidOperationException("Google credentials JSON not found in environment variables.");
-                }
-            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(credentialsJson));
-            var credPath = "token.json";
+public static async Task<GmailService> GetGmailServiceAsync()
+{
+    // بيقرأ الـ credentials من الـ Environment Variable اللي ظبطناها
+    var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+    if (string.IsNullOrEmpty(credentialsJson))
+    {
+        throw new InvalidOperationException("Google service account credentials not found in environment variables.");
+    }
 
-            var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
-                GoogleClientSecrets.FromStream(stream).Secrets,
-                Scopes,
-                "user",
-                CancellationToken.None,
-                new FileDataStore(credPath, true));
+    var credential = GoogleCredential.FromJson(credentialsJson)
+        .CreateScoped(Scopes)
+        .CreateWithUser("bikya.team@gmail.com"); 
 
-            return new GmailService(new BaseClientService.Initializer()
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = ApplicationName
-            });
-        }
+    return new GmailService(new BaseClientService.Initializer()
+    {
+        HttpClientInitializer = credential,
+        ApplicationName = ApplicationName
+    });
+}
 
         public static async Task SendEmailAsync(string to, string subject, string body)
         {
