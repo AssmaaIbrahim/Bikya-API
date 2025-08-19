@@ -250,11 +250,10 @@ namespace Bikya
                SeedRoles(scope.ServiceProvider).Wait();
             }
 
-            if (app.Environment.IsDevelopment())
-            {
+           
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
+            
 
             app.UseAuthentication();
             app.UseAuthorization();
