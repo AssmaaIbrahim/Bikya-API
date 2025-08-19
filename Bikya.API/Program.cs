@@ -170,28 +170,6 @@ namespace Bikya
                 // Add CORS
                 builder.Services.AddCors(options =>
                 {
-                    options.AddPolicy("AllowSpecificOrigin", policy =>
-                    {
-                        policy.WithOrigins(
-                                "http://localhost:4200",
-                                "http://localhost:50394",
-                                "http://localhost:4201",
-                                "http://localhost:4202",
-                                "http://localhost:4203",
-                                "http://localhost:4204",
-                                "http://localhost:4205",
-                                "https://localhost:4200",
-                                "https://localhost:4201",
-                                "https://localhost:4202",
-                                "https://localhost:4203",
-                                "https://localhost:4204",
-                                "https://localhost:4205"
-                              )
-                              .AllowAnyHeader()
-                              .AllowAnyMethod()
-                              .AllowCredentials();
-                    });
-                    
                     // Add a more permissive policy for development
                     options.AddPolicy("AllowAll", policy =>
                     {
