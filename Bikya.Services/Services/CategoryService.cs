@@ -1,24 +1,31 @@
 ﻿
-using Bikya.Data.Repositories.Interfaces;
 using Bikya.Data.Models;
+using Bikya.Data.Repositories;
+using Bikya.Data.Repositories.Interfaces;
 using Bikya.Data.Response;
 using Bikya.DTOs.CategoryDTOs;
 using Bikya.Services.Interfaces;
+using Microsoft.AspNetCore.Hosting;
+using ServiceStack.DataAnnotations;
+using ServiceStack.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Bikya.Services.Services
 {
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IWebHostEnvironment _env;
 
-        public CategoryService(ICategoryRepository categoryRepository)
+        public CategoryService(ICategoryRepository categoryRepository, IWebHostEnvironment env)
         {
             _categoryRepository = categoryRepository;
+            _env = env;
         }
 
         public async Task<ApiResponse<PaginatedCategoryResponse>> GetPaginatedAsync(int page = 1, int pageSize = 9, string? search = null)
@@ -98,6 +105,25 @@ namespace Bikya.Services.Services
                 return ApiResponse<CategoryDTO>.ErrorResponse("Category name already exists", 400);
             }
 
+
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(dto.Icon.FileName)}";
+            var folderPath = Path.Combine(_env.WebRootPath, "Images", "Categories");
+
+            // Create folder if it doesn't exist
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var savePath = Path.Combine(folderPath, fileName);
+
+            using (var stream = new FileStream(savePath, FileMode.Create))
+            {
+                await dto.Icon.CopyToAsync(stream);
+            }
+
+
+            dto.IconUrl = $"/Images/Categories/{fileName}";
+
+
             var category = ToCategoryFromCreateDTO(dto);
             await _categoryRepository.AddAsync(category);
             await _categoryRepository.SaveChangesAsync();
@@ -116,9 +142,41 @@ namespace Bikya.Services.Services
             if (existsWithSameName)
                 return ApiResponse<CategoryDTO>.ErrorResponse("Category name already exists", 400);
 
+            //Remove old icon from the root if it exists
+
+            var oldFileName = dto.IconUrl.TrimStart('/');
+            var oldFilePath = Path.Combine(_env.WebRootPath, oldFileName);
+            if (File.Exists(oldFilePath))
+            {
+                File.Delete(oldFilePath);
+            }
+
+            //Add new icon in root
+            var fileName = $"{Guid.NewGuid()}_{Path.GetFileName(dto.Icon.FileName)}";
+            var folderPath = Path.Combine(_env.WebRootPath, "Images", "Categories");
+
+            // Create folder if it doesn't exist
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var savePath = Path.Combine(folderPath, fileName);
+
+            using (var stream = new FileStream(savePath, FileMode.Create))
+            {
+                await dto.Icon.CopyToAsync(stream);
+            }
+
+
+            var IconUrl = $"/Images/Categories/{fileName}";
+
+
+
+
+
+
             category.Name = dto.Name;
             category.Description = dto.Description;
-            category.IconUrl = dto.IconUrl;
+            category.IconUrl = IconUrl;
             category.ParentCategoryId = dto.ParentCategoryId;
 
             _categoryRepository.Update(category);

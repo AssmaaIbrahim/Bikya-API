@@ -87,7 +87,7 @@ namespace Bikya.API.Areas.Category
         /// <returns>Creation result</returns>
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Add([FromBody] CreateCategoryDTO dto)
+        public async Task<IActionResult> Add([FromForm] CreateCategoryDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
@@ -104,7 +104,7 @@ namespace Bikya.API.Areas.Category
         /// <returns>Update result</returns>
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> Update(int id, [FromBody] UpdateCategoryDTO dto)
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateCategoryDTO dto)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);

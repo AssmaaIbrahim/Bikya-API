@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -18,7 +19,7 @@ namespace Bikya.DTOs.CategoryDTOs
 
         [MaxLength(255)]
         public string? Description { get; set; }
-
+        public IFormFile Icon { get; set; }
         public string? IconUrl { get; set; }
 
         public string? parentName { get; set; }
