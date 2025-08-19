@@ -19,7 +19,12 @@ namespace Bikya.Services.Services
 
         public static async Task<GmailService> GetGmailServiceAsync()
         {
-            using var stream = new FileStream("credentials.json", FileMode.Open, FileAccess.Read);
+            var credentialsJson = Environment.GetEnvironmentVariable("GOOGLE_CREDENTIALS_JSON");
+            if (string.IsNullOrEmpty(credentialsJson))
+            {
+             throw new InvalidOperationException("Google credentials JSON not found in environment variables.");
+                }
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(credentialsJson));
             var credPath = "token.json";
 
             var credential = await GoogleWebAuthorizationBroker.AuthorizeAsync(
