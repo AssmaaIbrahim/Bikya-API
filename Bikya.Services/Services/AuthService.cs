@@ -111,7 +111,7 @@ namespace Bikya.Services.Services
                 try
                 {
                     var verificationToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-                    var verificationUrl = $"http://localhost:4200/verify-email?token={Uri.EscapeDataString(verificationToken)}&email={Uri.EscapeDataString(user.Email)}";
+                    var verificationUrl = $"https://bikya-frontend-vokz.vercel.app/verify-email?token={Uri.EscapeDataString(verificationToken)}&email={Uri.EscapeDataString(user.Email)}";
                     var subject = "Welcome to Bikya - Verify Your Email";
                     var body = $@"
                         <html>
@@ -380,7 +380,7 @@ namespace Bikya.Services.Services
                 }
 
                 var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var resetUrl = $"http://localhost:4200/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(dto.Email)}";
+                var resetUrl = $"https://bikya-frontend-vokz.vercel.app/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(dto.Email)}";
 
                 // أرسل الإيميل فعليًا هنا
                 await _emailSender.SendEmailAsync(
@@ -448,7 +448,7 @@ namespace Bikya.Services.Services
                 var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                 var encodedToken = HttpUtility.UrlEncode(token);
 
-                var verificationLink = $"https://localhost:65162/api/Identity/Auth/verify-email?token={encodedToken}&email={email}";
+                var verificationLink = $"https://bikya-api.duckdns.org/api/Identity/Auth/verify-email?token={encodedToken}&email={email}";
 
                 var body = $@"
             <h1>Hi {user.FullName},</h1>
