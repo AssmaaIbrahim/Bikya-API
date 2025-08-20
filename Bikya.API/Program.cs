@@ -76,7 +76,6 @@ namespace Bikya
             builder.Services.AddScoped<ChatOrchestrator>();
             builder.Services.AddScoped<ChatService>();
 
-
             builder.Services.AddHttpContextAccessor();
             builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
             builder.Services.AddScoped<IStripeService, StripeService>();
@@ -92,6 +91,17 @@ namespace Bikya
                 var http = sp.GetRequiredService<HttpClient>();
                 var cfg = sp.GetRequiredService<IConfiguration>();
                 return new OpenRouterProvider(http, cfg);
+            });
+            
+            // Add CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
             });
 
             // Configure Identity
@@ -168,19 +178,7 @@ namespace Bikya
                         context.User.HasClaim(c => c.Type == "IsVerified" && c.Value == "true") ||
                         context.User.IsInRole("Admin")));
             });
-
-            // Add CORS
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowAll", policy =>
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
-                });
-                
-            });
-
+            
             #endregion
 
             builder.Services.AddEndpointsApiExplorer();
@@ -223,7 +221,6 @@ namespace Bikya
             });
 
             var app = builder.Build();
-          
 
             // Use Global Exception Handler
             app.UseMiddleware<GlobalExceptionHandler>();
@@ -234,19 +231,17 @@ namespace Bikya
                 SeedRoles(scope.ServiceProvider).Wait();
             }
 
-           
-                app.UseSwagger();
-                app.UseSwaggerUI();
+            app.UseSwagger();
+            app.UseSwaggerUI();
+
+            // The order of middleware is important here!
+            app.UseRouting(); // Add this to make the pipeline explicit
             
+            // Apply the CORS policy
+            app.UseCors("AllowAll");
 
             app.UseAuthentication();
             app.UseAuthorization();
-            
-            // Use CORS based on environment
-           
-            app.UseCors("AllowAll");
-            
-          
             
             app.UseStaticFiles();
 
